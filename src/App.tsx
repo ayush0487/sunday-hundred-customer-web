@@ -8,6 +8,7 @@ import Index from "./pages/Index.tsx";
 import Categories from "./pages/Categories.tsx";
 import BusinessDetail from "./pages/BusinessDetail.tsx";
 import Profile from "./pages/Profile.tsx";
+import ManageProfile from "./pages/ManageProfile.tsx";
 import NotFound from "./pages/NotFound.tsx";
 
 const queryClient = new QueryClient();
@@ -34,6 +35,7 @@ const App = () => (
           <Route path="/categories" element={<Categories />} />
           <Route path="/business/:id" element={<BusinessDetail />} />
           <Route path="/profile" element={<Profile />} />
+          <Route path="/profile/manage" element={<ManageProfile />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
