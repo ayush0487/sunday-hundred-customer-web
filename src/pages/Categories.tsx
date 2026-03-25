@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Scissors, Dumbbell, Sparkles, Heart, Wrench, Paintbrush, Camera, Car, Star, MapPin, TrendingUp, SlidersHorizontal } from "lucide-react";
 import { motion } from "framer-motion";
+import { useSearchParams } from "react-router-dom";
 import { Layout } from "@/components/Layout";
 import { BusinessCard } from "@/components/BusinessCard";
 import { businesses } from "@/data/mock";
@@ -24,8 +25,30 @@ const filterButtons = [
 ];
 
 export default function CategoryPage() {
+  const [searchParams] = useSearchParams();
+  const queryCategory = searchParams.get("category");
   const [activeCategory, setActiveCategory] = useState("All");
   const [activeFilter, setActiveFilter] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!queryCategory) {
+      setActiveCategory("All");
+      return;
+    }
+
+    const normalized = queryCategory.toLowerCase();
+    const matchedCategory = allCategories.find((cat) => cat.name.toLowerCase() === normalized);
+    setActiveCategory(matchedCategory ? matchedCategory.name : "All");
+  }, [queryCategory]);
+
+  const filteredBusinesses = useMemo(() => {
+    if (activeCategory === "All") {
+      return businesses;
+    }
+
+    const normalizedCategory = activeCategory.toLowerCase();
+    return businesses.filter((biz) => biz.category.toLowerCase().includes(normalizedCategory));
+  }, [activeCategory]);
 
   return (
     <Layout>
@@ -121,9 +144,9 @@ export default function CategoryPage() {
 
           {/* Results Grid */}
           <div className="flex-1">
-            <p className="text-sm text-muted-foreground mb-4">{businesses.length} businesses found</p>
+            <p className="text-sm text-muted-foreground mb-4">{filteredBusinesses.length} businesses found</p>
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5">
-              {businesses.map((biz, i) => (
+              {filteredBusinesses.map((biz, i) => (
                 <motion.div
                   key={biz.id}
                   initial={{ opacity: 0, y: 15 }}

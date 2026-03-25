@@ -10,19 +10,21 @@ interface BusinessCardProps {
   reviews: number;
   distance: string;
   category: string;
-  tags: string[];
+  tags?: string[];
   offer?: string;
+  showOffer?: boolean;
+  showTags?: boolean;
 }
 
-export function BusinessCard({ id, name, image, rating, reviews, distance, category, tags, offer }: BusinessCardProps) {
+export function BusinessCard({ id, name, image, rating, reviews, distance, category, tags, offer, showOffer = true, showTags = true }: BusinessCardProps) {
   return (
     <Link
       to={`/business/${id}`}
-      className="group block rounded-2xl overflow-hidden bg-card shadow-card hover:shadow-elevated transition-all duration-300 hover:-translate-y-1"
+      className="group relative z-10 block cursor-pointer rounded-2xl overflow-hidden bg-card shadow-card hover:shadow-elevated transition-all duration-300 hover:-translate-y-1"
     >
       <div className="relative aspect-[4/3] overflow-hidden">
         <img src={image} alt={name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-        {offer && (
+        {showOffer && offer && (
           <div className="absolute top-3 left-3 px-2.5 py-1 rounded-lg gradient-gold text-xs font-bold text-primary-foreground">
             {offer}
           </div>
@@ -39,13 +41,15 @@ export function BusinessCard({ id, name, image, rating, reviews, distance, categ
           <StarRating rating={rating} count={reviews} />
         </div>
         <p className="text-xs text-muted-foreground mb-3">{category}</p>
-        <div className="flex flex-wrap gap-1.5">
-          {tags.map((tag) => (
-            <span key={tag} className="text-[10px] px-2 py-0.5 rounded-full bg-accent text-accent-foreground font-medium">
-              {tag}
-            </span>
-          ))}
-        </div>
+        {showTags && tags && tags.length > 0 && (
+          <div className="flex flex-wrap gap-1.5">
+            {tags.map((tag) => (
+              <span key={tag} className="text-[10px] px-2 py-0.5 rounded-full bg-accent text-accent-foreground font-medium">
+                {tag}
+              </span>
+            ))}
+          </div>
+        )}
       </div>
     </Link>
   );

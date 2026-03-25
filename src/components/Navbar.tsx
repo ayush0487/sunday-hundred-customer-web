@@ -1,4 +1,4 @@
-import { MapPin, Search, User, Heart } from "lucide-react";
+import { MapPin, Search, User } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { ThemeToggle } from "./ThemeToggle";
 
@@ -37,9 +37,6 @@ export function Navbar() {
         {/* Actions */}
         <div className="flex items-center gap-2">
           <ThemeToggle />
-          <Link to="/profile" className="p-2 rounded-full bg-secondary hover:bg-accent transition-colors hidden sm:flex">
-            <Heart className="h-5 w-5 text-muted-foreground" />
-          </Link>
           <Link to="/profile" className="p-2 rounded-full bg-secondary hover:bg-accent transition-colors">
             <User className="h-5 w-5 text-muted-foreground" />
           </Link>

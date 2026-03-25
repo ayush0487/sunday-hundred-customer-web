@@ -7,8 +7,8 @@ export const businesses = [
     reviews: 234,
     distance: "1.2 km",
     category: "Salon & Spa",
-    tags: ["Most Booked", "Premium"],
-    offer: "30% OFF",
+    // tags: ["Most Booked", "Premium"],
+    // offer: "30% OFF",
   },
   {
     id: "2",
@@ -18,8 +18,8 @@ export const businesses = [
     reviews: 189,
     distance: "2.4 km",
     category: "Gym & Fitness",
-    tags: ["Trending", "Popular"],
-    offer: "First Month Free",
+    // tags: ["Trending", "Popular"],
+    // offer: "First Month Free",
   },
   {
     id: "3",
@@ -29,7 +29,7 @@ export const businesses = [
     reviews: 312,
     distance: "0.8 km",
     category: "Yoga & Wellness",
-    tags: ["Top Rated", "Nearby"],
+    // tags: ["Top Rated", "Nearby"],
   },
   {
     id: "4",
@@ -39,8 +39,8 @@ export const businesses = [
     reviews: 156,
     distance: "3.1 km",
     category: "Beauty & Skincare",
-    tags: ["Popular", "Slots Left"],
-    offer: "20% OFF",
+    // tags: ["Popular", "Slots Left"],
+    // offer: "20% OFF",
   },
   {
     id: "5",
@@ -50,7 +50,7 @@ export const businesses = [
     reviews: 98,
     distance: "1.8 km",
     category: "Barber",
-    tags: ["Trending"],
+    // tags: ["Trending"],
   },
   {
     id: "6",
@@ -60,8 +60,8 @@ export const businesses = [
     reviews: 421,
     distance: "0.5 km",
     category: "Spa & Massage",
-    tags: ["Most Booked", "Top Rated"],
-    offer: "40% OFF",
+    // tags: ["Most Booked", "Top Rated"],
+    // offer: "40% OFF",
   },
 ];
 

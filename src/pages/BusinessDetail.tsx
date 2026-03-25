@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ArrowLeft, ChevronLeft, ChevronRight, Clock, MapPin, MessageCircle, Star, Share2, Heart } from "lucide-react";
+import { ArrowLeft, ChevronLeft, ChevronRight, Clock, MapPin, MessageCircle, Star, Share2 } from "lucide-react";
 import { Link, useParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Layout } from "@/components/Layout";
@@ -46,7 +46,6 @@ export default function BusinessDetail() {
         </div>
         <div className="absolute top-4 right-4 flex gap-2">
           <button className="p-2.5 rounded-full glass"><Share2 className="h-4 w-4" /></button>
-          <button className="p-2.5 rounded-full glass"><Heart className="h-4 w-4" /></button>
         </div>
         {/* Carousel controls */}
         <button
@@ -80,7 +79,7 @@ export default function BusinessDetail() {
             {/* Header */}
             <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }}>
               <div className="flex flex-wrap gap-2 mb-3">
-                {biz.tags.map((tag) => (
+                {biz.tags?.map((tag) => (
                   <span key={tag} className="text-[10px] px-2.5 py-1 rounded-full gradient-gold text-primary-foreground font-bold uppercase tracking-wider">
                     {tag}
                   </span>

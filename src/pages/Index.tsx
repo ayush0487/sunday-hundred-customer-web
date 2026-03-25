@@ -41,14 +41,14 @@ const heroSlides = [
 ];
 
 const categories = [
-  { name: "Salon", icon: Scissors, count: 120, href: "/categories" },
-  { name: "Spa", icon: Sparkles, count: 85, href: "/categories" },
-  { name: "Gym", icon: Dumbbell, count: 64, href: "/categories" },
-  { name: "Beauty", icon: Heart, count: 93, href: "/categories" },
-  { name: "Repairs", icon: Wrench, count: 42, href: "/categories" },
-  { name: "Painters", icon: Paintbrush, count: 31, href: "/categories" },
-  { name: "Photography", icon: Camera, count: 27, href: "/categories" },
-  { name: "Car Care", icon: Car, count: 58, href: "/categories" },
+  { name: "Salon", icon: Scissors, count: 120, href: "/categories?category=Salon" },
+  { name: "Spa", icon: Sparkles, count: 85, href: "/categories?category=Spa" },
+  { name: "Gym", icon: Dumbbell, count: 64, href: "/categories?category=Gym" },
+  { name: "Beauty", icon: Heart, count: 93, href: "/categories?category=Beauty" },
+  { name: "Repairs", icon: Wrench, count: 42, href: "/categories?category=Repairs" },
+  { name: "Painters", icon: Paintbrush, count: 31, href: "/categories?category=Painters" },
+  { name: "Photography", icon: Camera, count: 27, href: "/categories?category=Photography" },
+  { name: "Car Care", icon: Car, count: 58, href: "/categories?category=Car%20Care" },
 ];
 
 const filters = [
@@ -89,7 +89,9 @@ export default function Homepage() {
           }}
           plugins={[
             Autoplay({
-              delay: 5000,
+              delay: 2000,
+              stopOnInteraction: false,
+              stopOnMouseEnter: false,
             }),
           ]}
           setApi={setApi}
@@ -203,7 +205,7 @@ export default function Homepage() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
           {businesses.map((biz, i) => (
             <motion.div key={biz.id} custom={i} initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeUp}>
-              <BusinessCard {...biz} />
+              <BusinessCard {...biz} showOffer={false} showTags={false} />
             </motion.div>
           ))}
         </div>
