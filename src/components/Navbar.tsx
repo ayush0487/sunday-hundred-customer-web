@@ -1,15 +1,16 @@
 import { MapPin, Search, User } from "lucide-react";
-import { Link, useLocation } from "react-router-dom";
+import Link from "next/link";
+import { useRouter } from "next/router";
 import { ThemeToggle } from "./ThemeToggle";
 
 export function Navbar() {
-  const location = useLocation();
+  const router = useRouter();
 
   return (
     <header className="sticky top-0 z-50 glass border-b border-border">
       <div className="container flex items-center justify-between h-16">
         {/* Logo */}
-        <Link to="/" className="flex items-center gap-2">
+        <Link href="/" className="flex items-center gap-2">
           <div className="w-8 h-8 rounded-lg gradient-gold flex items-center justify-center">
             <span className="font-display font-bold text-primary-foreground text-sm">S</span>
           </div>
@@ -37,7 +38,7 @@ export function Navbar() {
         {/* Actions */}
         <div className="flex items-center gap-2">
           <ThemeToggle />
-          <Link to="/profile" className="p-2 rounded-full bg-secondary hover:bg-accent transition-colors">
+          <Link href="/profile" className="p-2 rounded-full bg-secondary hover:bg-accent transition-colors">
             <User className="h-5 w-5 text-muted-foreground" />
           </Link>
         </div>

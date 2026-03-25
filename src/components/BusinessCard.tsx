@@ -1,5 +1,5 @@
 import { MapPin } from "lucide-react";
-import { Link } from "react-router-dom";
+import Link from "next/link";
 import { StarRating } from "./StarRating";
 
 const FALLBACK_BUSINESS_IMAGE = "https://images.unsplash.com/photo-1562322140-8baeececf3df?w=600&h=450&fit=crop";
@@ -21,7 +21,7 @@ interface BusinessCardProps {
 export function BusinessCard({ id, name, image, rating, reviews, distance, category, tags, offer, showOffer = true, showTags = true }: BusinessCardProps) {
   return (
     <Link
-      to={`/business/${id}`}
+      href={`/business/${id}`}
       className="group relative z-10 block cursor-pointer rounded-2xl overflow-hidden bg-card shadow-card hover:shadow-elevated transition-all duration-300 hover:-translate-y-1"
     >
       <div className="relative aspect-[4/3] overflow-hidden">

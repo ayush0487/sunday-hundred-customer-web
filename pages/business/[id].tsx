@@ -1,10 +1,11 @@
 import { useState } from "react";
 import { ArrowLeft, ChevronLeft, ChevronRight, Clock, MapPin, MessageCircle, Star, Share2 } from "lucide-react";
-import { Link, useParams } from "react-router-dom";
+
+import Link from "next/link";
 import { motion } from "framer-motion";
 import { Layout } from "@/components/Layout";
 import { StarRating } from "@/components/StarRating";
-import { businesses, services, reviews } from "@/data/mock";
+import { useRouter } from "next/router";
 
 const galleryImages = [
   "https://images.unsplash.com/photo-1560066984-138dadb4c035?w=800&h=500&fit=crop",
@@ -12,10 +13,36 @@ const galleryImages = [
   "https://images.unsplash.com/photo-1544161515-4ab6ce6db874?w=800&h=500&fit=crop",
 ];
 
-export default function BusinessDetail() {
-  const { id } = useParams();
-  const biz = businesses.find((b) => b.id === id) || businesses[0];
+export async function getServerSideProps(context: { params: { id: string }; req: { headers: Record<string, unknown> } }) {
+  const { id } = context.params;
+
+  const protoHeader = context.req.headers["x-forwarded-proto"];
+  const hostHeader = context.req.headers["x-forwarded-host"] ?? context.req.headers["host"];
+  const protocol = (Array.isArray(protoHeader) ? protoHeader[0] : protoHeader) ?? "http";
+  const host = Array.isArray(hostHeader) ? hostHeader[0] : hostHeader;
+  const baseUrl = `${protocol}://${host}`;
+
+  const res = await fetch(`${baseUrl}/api/business/${id}`);
+  const biz = await res.json();
+
+  const reviewsRes = await fetch(`${baseUrl}/api/reviews`);
+  const reviews = await reviewsRes.json();
+
+  const servicesRes = await fetch(`${baseUrl}/api/services`);
+  const services = await servicesRes.json();
+
+  return {
+    props: {
+      biz,
+      reviews,
+      services,
+    },
+  };
+}
+
+export default function BusinessDetail({ biz, reviews, services }) {
   const [currentImage, setCurrentImage] = useState(0);
+  const router = useRouter();
 
   const handleBookNow = () => {
     window.open(
@@ -40,7 +67,7 @@ export default function BusinessDetail() {
           />
         </div>
         <div className="absolute top-4 left-4 flex gap-2">
-          <Link to="/categories" className="p-2.5 rounded-full glass hover:bg-accent transition-colors">
+          <Link href="/categories" className="p-2.5 rounded-full glass hover:bg-accent transition-colors">
             <ArrowLeft className="h-5 w-5" />
           </Link>
         </div>

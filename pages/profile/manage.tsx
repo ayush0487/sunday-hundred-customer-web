@@ -1,5 +1,6 @@
 import { ChangeEvent, useMemo, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import Link from "next/link";
+import { useRouter } from "next/router";
 import { motion } from "framer-motion";
 import { ArrowLeft, Camera, Mail, Phone, Save, Trash2, User } from "lucide-react";
 import { Layout } from "@/components/Layout";
@@ -8,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { defaultUserProfile, getUserProfile, saveUserProfile } from "@/data/profile";
 
 export default function ManageProfile() {
-  const navigate = useNavigate();
+  const router = useRouter();
   const initialProfile = useMemo(() => getUserProfile(), []);
 
   const [email, setEmail] = useState(initialProfile.email);
@@ -47,13 +48,13 @@ export default function ManageProfile() {
       photoUrl,
     });
 
-    navigate("/profile");
+    router.push("/profile");
   };
 
   return (
     <Layout>
       <div className="container py-6 md:py-10 max-w-3xl mx-auto">
-        <Link to="/profile" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-4">
+        <Link href="/profile" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-4">
           <ArrowLeft className="h-4 w-4" />
           Back to Profile
         </Link>
@@ -149,7 +150,7 @@ export default function ManageProfile() {
             </section>
 
             <div className="flex flex-col-reverse sm:flex-row gap-3 sm:justify-end">
-              <Button type="button" variant="outline" className="w-full sm:w-auto" onClick={() => navigate("/profile")}>Cancel</Button>
+              <Button type="button" variant="outline" className="w-full sm:w-auto" onClick={() => router.push("/profile")}>Cancel</Button>
               <Button type="button" className="w-full sm:w-auto" onClick={onSave}>
                 <Save className="h-4 w-4" />
                 Save Changes

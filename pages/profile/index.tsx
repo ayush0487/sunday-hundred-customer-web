@@ -1,7 +1,7 @@
 import { User, MapPin, CreditCard, Bell, Star, Gift, Briefcase, Settings, ChevronRight, BookOpen, Wallet } from "lucide-react";
 import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useRouter } from "next/router";
 import { Layout } from "@/components/Layout";
 import { UserProfile, defaultUserProfile, getUserProfile } from "@/data/profile";
 
@@ -23,7 +23,7 @@ const menuItems = [
 ];
 
 export default function Profile() {
-  const navigate = useNavigate();
+  const router = useRouter();
   const [profile, setProfile] = useState<UserProfile>(defaultUserProfile);
 
   useEffect(() => {
@@ -33,7 +33,6 @@ export default function Profile() {
   return (
     <Layout>
       <div className="container py-6 md:py-10 max-w-2xl mx-auto">
-        {/* User Card */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -55,7 +54,6 @@ export default function Profile() {
           </div>
         </motion.div>
 
-        {/* Stats */}
         <div className="grid grid-cols-3 gap-3 mb-6">
           {stats.map((stat, i) => (
             <motion.div
@@ -72,7 +70,6 @@ export default function Profile() {
           ))}
         </div>
 
-        {/* Menu */}
         <div className="rounded-2xl bg-card shadow-card overflow-hidden">
           {menuItems.map((item, i) => (
             <motion.button
@@ -83,7 +80,7 @@ export default function Profile() {
               className="w-full flex items-center justify-between px-5 py-4 hover:bg-accent transition-colors border-b border-border last:border-b-0"
               onClick={() => {
                 if (item.label === "My Profile") {
-                  navigate("/profile/manage");
+                  router.push("/profile/manage");
                 }
               }}
             >

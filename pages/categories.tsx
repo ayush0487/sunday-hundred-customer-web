@@ -1,10 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { Scissors, Dumbbell, Sparkles, Heart, Wrench, Paintbrush, Camera, Car, Star, MapPin, TrendingUp, SlidersHorizontal } from "lucide-react";
 import { motion } from "framer-motion";
-import { useSearchParams } from "react-router-dom";
+import { useRouter } from "next/router";
 import { Layout } from "@/components/Layout";
 import { BusinessCard } from "@/components/BusinessCard";
-import { businesses } from "@/data/mock";
 
 const allCategories = [
   { name: "All", icon: Star },
@@ -24,9 +23,26 @@ const filterButtons = [
   { label: "Popular", icon: TrendingUp },
 ];
 
-export default function CategoryPage() {
-  const [searchParams] = useSearchParams();
-  const queryCategory = searchParams.get("category");
+export async function getServerSideProps({ req }: { req: { headers: Record<string, unknown> } }) {
+  const protoHeader = req.headers["x-forwarded-proto"];
+  const hostHeader = req.headers["x-forwarded-host"] ?? req.headers["host"];
+  const protocol = (Array.isArray(protoHeader) ? protoHeader[0] : protoHeader) ?? "http";
+  const host = Array.isArray(hostHeader) ? hostHeader[0] : hostHeader;
+  const baseUrl = `${protocol}://${host}`;
+
+  const res = await fetch(`${baseUrl}/api/businesses`);
+  const businesses = await res.json();
+
+  return {
+    props: {
+      businesses,
+    },
+  };
+}
+
+export default function CategoryPage({ businesses }: { businesses: any[] }) {
+  const router = useRouter();
+  const { category: queryCategory } = router.query;
   const [activeCategory, setActiveCategory] = useState("All");
   const [activeFilter, setActiveFilter] = useState<string | null>(null);
 
@@ -36,7 +52,7 @@ export default function CategoryPage() {
       return;
     }
 
-    const normalized = queryCategory.toLowerCase();
+    const normalized = (queryCategory as string).toLowerCase();
     const matchedCategory = allCategories.find((cat) => cat.name.toLowerCase() === normalized);
     setActiveCategory(matchedCategory ? matchedCategory.name : "All");
   }, [queryCategory]);

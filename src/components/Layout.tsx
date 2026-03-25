@@ -3,13 +3,6 @@ import { Navbar } from "./Navbar";
 import { BottomNav } from "./BottomNav";
 
 export function Layout({ children }: { children: ReactNode }) {
-  // Default to dark theme
-  useEffect(() => {
-    if (!document.documentElement.classList.contains("dark") && !document.documentElement.classList.contains("light-set")) {
-      document.documentElement.classList.add("dark");
-    }
-  }, []);
-
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar />

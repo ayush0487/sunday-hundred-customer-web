@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import Link from "next/link";
 import { LucideIcon } from "lucide-react";
 
 interface CategoryCardProps {
@@ -11,7 +11,7 @@ interface CategoryCardProps {
 export function CategoryCard({ name, icon: Icon, count, href }: CategoryCardProps) {
   return (
     <Link
-      to={href}
+      href={href}
       className="group flex flex-col items-center gap-3 p-5 rounded-2xl bg-card shadow-card hover:shadow-elevated hover:-translate-y-1 transition-all duration-300"
     >
       <div className="w-14 h-14 rounded-2xl bg-accent flex items-center justify-center group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
