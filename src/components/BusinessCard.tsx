@@ -1,6 +1,8 @@
-import { MapPin, Clock } from "lucide-react";
+import { MapPin } from "lucide-react";
 import { Link } from "react-router-dom";
 import { StarRating } from "./StarRating";
+
+const FALLBACK_BUSINESS_IMAGE = "https://images.unsplash.com/photo-1562322140-8baeececf3df?w=600&h=450&fit=crop";
 
 interface BusinessCardProps {
   id: string;
@@ -23,7 +25,16 @@ export function BusinessCard({ id, name, image, rating, reviews, distance, categ
       className="group relative z-10 block cursor-pointer rounded-2xl overflow-hidden bg-card shadow-card hover:shadow-elevated transition-all duration-300 hover:-translate-y-1"
     >
       <div className="relative aspect-[4/3] overflow-hidden">
-        <img src={image} alt={name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+        <img
+          src={image}
+          alt={name}
+          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+          onError={(event) => {
+            const target = event.currentTarget;
+            target.onerror = null;
+            target.src = FALLBACK_BUSINESS_IMAGE;
+          }}
+        />
         {showOffer && offer && (
           <div className="absolute top-3 left-3 px-2.5 py-1 rounded-lg gradient-gold text-xs font-bold text-primary-foreground">
             {offer}
