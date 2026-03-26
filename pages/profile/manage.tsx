@@ -1,4 +1,4 @@
-import { ChangeEvent, useMemo, useState } from "react";
+import { ChangeEvent, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/router";
 import { motion } from "framer-motion";
@@ -6,15 +6,22 @@ import { ArrowLeft, Camera, Mail, Phone, Save, Trash2, User } from "lucide-react
 import { Layout } from "@/components/Layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { defaultUserProfile, getUserProfile, saveUserProfile } from "@/data/profile";
+import { UserProfile, defaultUserProfile, getUserProfile, saveUserProfile } from "@/data/profile";
 
 export default function ManageProfile() {
   const router = useRouter();
-  const initialProfile = useMemo(() => getUserProfile(), []);
+  const [profile, setProfile] = useState<UserProfile>(defaultUserProfile);
+  const [email, setEmail] = useState(defaultUserProfile.email);
+  const [phone, setPhone] = useState(defaultUserProfile.phone);
+  const [photoUrl, setPhotoUrl] = useState<string | null>(defaultUserProfile.photoUrl);
 
-  const [email, setEmail] = useState(initialProfile.email);
-  const [phone, setPhone] = useState(initialProfile.phone);
-  const [photoUrl, setPhotoUrl] = useState<string | null>(initialProfile.photoUrl);
+  useEffect(() => {
+    const loaded = getUserProfile();
+    setProfile(loaded);
+    setEmail(loaded.email);
+    setPhone(loaded.phone);
+    setPhotoUrl(loaded.photoUrl);
+  }, []);
 
   const onPhotoChange = (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -42,7 +49,7 @@ export default function ManageProfile() {
   const onSave = () => {
     saveUserProfile({
       ...defaultUserProfile,
-      ...initialProfile,
+      ...profile,
       email: email.trim(),
       phone: phone.trim(),
       photoUrl,

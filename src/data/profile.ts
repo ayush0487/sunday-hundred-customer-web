@@ -1,3 +1,5 @@
+import { getCurrentUser, updateCurrentUser, updateCurrentUserEmail } from "@/lib/auth";
+
 export const defaultUserProfile = {
   name: "John Doe",
   email: "john.doe@example.com",
@@ -8,11 +10,30 @@ export const defaultUserProfile = {
 export type UserProfile = typeof defaultUserProfile;
 
 export function getUserProfile(): UserProfile {
-  return defaultUserProfile;
+  const currentUser = getCurrentUser();
+
+  if (!currentUser) {
+    return defaultUserProfile;
+  }
+
+  return {
+    name: currentUser.name || defaultUserProfile.name,
+    email: currentUser.email || defaultUserProfile.email,
+    phone: currentUser.phone || defaultUserProfile.phone,
+    photoUrl: currentUser.photoUrl ?? null,
+  };
 }
 
 export function saveUserProfile(profile: UserProfile) {
-  // This is a mock implementation.
-  // In a real application, you would save this to a database.
-  console.log("Saving user profile:", profile);
+  const currentUser = getCurrentUser();
+
+  if (currentUser && profile.email && profile.email.trim().toLowerCase() !== currentUser.email.toLowerCase()) {
+    updateCurrentUserEmail(profile.email);
+  }
+
+  updateCurrentUser({
+    name: profile.name,
+    phone: profile.phone,
+    photoUrl: profile.photoUrl ?? null,
+  });
 }
