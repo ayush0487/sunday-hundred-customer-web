@@ -6,6 +6,7 @@ import { motion } from "framer-motion";
 import { Layout } from "@/components/Layout";
 import { StarRating } from "@/components/StarRating";
 import { useRouter } from "next/router";
+import { getCurrentUserEmail } from "@/lib/auth";
 
 const galleryImages = [
   "https://images.unsplash.com/photo-1560066984-138dadb4c035?w=800&h=500&fit=crop",
@@ -45,6 +46,13 @@ export default function BusinessDetail({ biz, reviews, services }) {
   const router = useRouter();
 
   const handleBookNow = () => {
+    const currentUserEmail = getCurrentUserEmail();
+    if (!currentUserEmail) {
+      const returnTo = router.asPath;
+      void router.push(`/login?returnTo=${encodeURIComponent(returnTo)}`);
+      return;
+    }
+
     window.open(
       `https://wa.me/919999999999?text=Hi, I'd like to book a service at ${biz.name}`,
       "_blank"

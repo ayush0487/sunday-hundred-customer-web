@@ -19,8 +19,11 @@ export default function LoginPage() {
 
   useEffect(() => {
     // If already logged in, go to profile.
+    const returnToParam = router.query.returnTo;
+    const returnTo = typeof returnToParam === "string" && returnToParam ? returnToParam : "/profile";
+
     if (getCurrentUser()) {
-      router.replace("/profile");
+      router.replace(returnTo);
     }
   }, [router]);
 
@@ -37,7 +40,9 @@ export default function LoginPage() {
       return;
     }
 
-    router.push("/profile");
+    const returnToParam = router.query.returnTo;
+    const returnTo = typeof returnToParam === "string" && returnToParam ? returnToParam : "/profile";
+    router.push(returnTo);
   };
 
   return (
