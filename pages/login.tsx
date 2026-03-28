@@ -6,23 +6,21 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { getCurrentUser, login } from "@/lib/auth";
+import { useLogin } from "@/hooks/useAuth";
 
 export default function LoginPage() {
   const router = useRouter();
+  const loginMutation = useLogin();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-
   const [error, setError] = useState<string | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
-    // If already logged in, go to profile.
-    const returnToParam = router.query.returnTo;
-    const returnTo = typeof returnToParam === "string" && returnToParam ? returnToParam : "/profile";
-
-    if (getCurrentUser()) {
+    const token = localStorage.getItem("token");
+    if (token) {
+      const returnToParam = router.query.returnTo;
+      const returnTo = typeof returnToParam === "string" && returnToParam ? returnToParam : "/profile";
       router.replace(returnTo);
     }
   }, [router]);
@@ -31,18 +29,22 @@ export default function LoginPage() {
     event.preventDefault();
     setError(null);
 
-    setIsSubmitting(true);
-    const result = login({ email, password });
-    setIsSubmitting(false);
+    loginMutation.mutate(
+      { email, password },
+      {
+        onSuccess: ({ data }) => {
+          // Store user info for profile page
+          localStorage.setItem("user", JSON.stringify(data.data.user));
 
-    if (result.ok === false) {
-      setError(result.error);
-      return;
-    }
-
-    const returnToParam = router.query.returnTo;
-    const returnTo = typeof returnToParam === "string" && returnToParam ? returnToParam : "/profile";
-    router.push(returnTo);
+          const returnToParam = router.query.returnTo;
+          const returnTo = typeof returnToParam === "string" && returnToParam ? returnToParam : "/profile";
+          router.push(returnTo);
+        },
+        onError: (err: any) => {
+          setError(err.message || "Invalid email or password");
+        },
+      }
+    );
   };
 
   return (
@@ -51,7 +53,7 @@ export default function LoginPage() {
         <Card className="rounded-2xl shadow-elevated">
           <CardHeader>
             <CardTitle className="font-display">Welcome back</CardTitle>
-            <CardDescription>Login using your saved local storage account.</CardDescription>
+            <CardDescription>Login to your account.</CardDescription>
           </CardHeader>
           <CardContent>
             <form className="space-y-4" onSubmit={onSubmit}>
@@ -73,8 +75,8 @@ export default function LoginPage() {
 
               {error ? <p className="text-sm text-destructive">{error}</p> : null}
 
-              <Button type="submit" className="w-full" disabled={isSubmitting}>
-                {isSubmitting ? "Logging in..." : "Login"}
+              <Button type="submit" className="w-full" disabled={loginMutation.isPending}>
+                {loginMutation.isPending ? "Logging in..." : "Login"}
               </Button>
 
               <p className="text-sm text-muted-foreground text-center">

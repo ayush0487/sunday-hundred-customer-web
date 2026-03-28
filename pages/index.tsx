@@ -1,35 +1,61 @@
+import Head from "next/head";
 import { Layout } from "@/components/Layout";
 import { Hero } from "@/components/home/Hero";
 import { QuickFilters } from "@/components/home/QuickFilters";
 import { Categories } from "@/components/home/Categories";
 import { FeaturedBusinesses } from "@/components/home/FeaturedBusinesses";
 import { OffersBanner } from "@/components/home/OffersBanner";
+import { useFeaturedBusinesses } from "@/hooks/useBusiness";
+import { useCategories } from "@/hooks/useCategories";
+import { useGeolocation } from "@/hooks/useGeolocation";
+import serverApi from "@/api/server";
+import type { FeaturedBusinessData, Category } from "@/types/api.types";
 
-export async function getServerSideProps({ req }: { req: { headers: Record<string, unknown> } }) {
-  const protoHeader = req.headers["x-forwarded-proto"];
-  const hostHeader = req.headers["x-forwarded-host"] ?? req.headers["host"];
-  const protocol = (Array.isArray(protoHeader) ? protoHeader[0] : protoHeader) ?? "http";
-  const host = Array.isArray(hostHeader) ? hostHeader[0] : hostHeader;
-  const baseUrl = `${protocol}://${host}`;
-
-  const res = await fetch(`${baseUrl}/api/businesses`);
-  const businesses = await res.json();
-
-  return {
-    props: {
-      businesses,
-    },
-  };
+interface HomeProps {
+  featuredData: FeaturedBusinessData | null;
+  categories: Category[] | null;
 }
 
-export default function Homepage({ businesses }: { businesses: any[] }) {
+export async function getServerSideProps() {
+  try {
+    const [featuredRes, categoriesRes] = await Promise.all([
+      serverApi.get("/business/getAllFeatureBusiness", { params: { page: 1, limit: 6 } }),
+      serverApi.get("/categories/"),
+    ]);
+
+    
+    return {
+      props: {
+        featuredData: featuredRes.data.data ?? null,
+        categories: categoriesRes.data.data ?? null,
+      },
+    };
+  } catch {
+    return { props: { featuredData: null, categories: null } };
+  }
+}
+
+export default function Homepage({ featuredData, categories }: HomeProps) {
+  const { location } = useGeolocation();
+  const { data, isLoading } = useFeaturedBusinesses(
+    { page: 1, limit: 6, ...(location && { lat: location.lat, long: location.long }) },
+    featuredData ?? undefined
+  );
+  const { data: cats } = useCategories(categories ?? undefined);
+
   return (
-    <Layout>
-      <Hero />
-      <QuickFilters />
-      <Categories />
-      <FeaturedBusinesses businesses={businesses} />
-      <OffersBanner />
-    </Layout>
+    <>
+      <Head>
+        <title>Sunday Hundred — Find & Book Top Local Services</title>
+        <meta name="description" content="Discover and book the best salons, spas, gyms, and local services near you. Top-rated businesses with instant WhatsApp booking." />
+      </Head>
+      <Layout>
+        <Hero />
+        <QuickFilters />
+        <Categories ssrCategories={cats} />
+        <FeaturedBusinesses businesses={data?.businesses ?? []} isLoading={isLoading} />
+        <OffersBanner />
+      </Layout>
+    </>
   );
 }

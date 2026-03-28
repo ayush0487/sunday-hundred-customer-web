@@ -1,181 +1,306 @@
 import { useEffect, useMemo, useState } from "react";
+import Head from "next/head";
 import { Scissors, Dumbbell, Sparkles, Heart, Wrench, Paintbrush, Camera, Car, Star, MapPin, TrendingUp, SlidersHorizontal } from "lucide-react";
 import { motion } from "framer-motion";
 import { useRouter } from "next/router";
 import { Layout } from "@/components/Layout";
 import { BusinessCard } from "@/components/BusinessCard";
+import { useFeaturedBusinesses } from "@/hooks/useBusiness";
+import { useCategories } from "@/hooks/useCategories";
+import { useGeolocation } from "@/hooks/useGeolocation";
+import serverApi from "@/api/server";
+import type { FeaturedBusinessData, FeaturedBusinessParams, Category } from "@/types/api.types";
 
-const allCategories = [
-  { name: "All", icon: Star },
-  { name: "Salon", icon: Scissors },
-  { name: "Spa", icon: Sparkles },
-  { name: "Gym", icon: Dumbbell },
-  { name: "Beauty", icon: Heart },
-  { name: "Repairs", icon: Wrench },
-  { name: "Painters", icon: Paintbrush },
-  { name: "Photography", icon: Camera },
-  { name: "Car Care", icon: Car },
-];
+const iconMap: Record<string, any> = {
+  salon: Scissors,
+  spa: Sparkles,
+  gym: Dumbbell,
+  beauty: Heart,
+  repairs: Wrench,
+  painters: Paintbrush,
+  photography: Camera,
+  "car care": Car,
+};
 
 const filterButtons = [
-  { label: "Top Rated", icon: Star },
-  { label: "Nearby", icon: MapPin },
-  { label: "Popular", icon: TrendingUp },
+  { label: "Top Rated", value: "top_rated" as const, icon: Star },
+  { label: "Nearby", value: "nearby" as const, icon: MapPin },
+  { label: "Popular", value: "popular" as const, icon: TrendingUp },
 ];
 
-export async function getServerSideProps({ req }: { req: { headers: Record<string, unknown> } }) {
-  const protoHeader = req.headers["x-forwarded-proto"];
-  const hostHeader = req.headers["x-forwarded-host"] ?? req.headers["host"];
-  const protocol = (Array.isArray(protoHeader) ? protoHeader[0] : protoHeader) ?? "http";
-  const host = Array.isArray(hostHeader) ? hostHeader[0] : hostHeader;
-  const baseUrl = `${protocol}://${host}`;
-
-  const res = await fetch(`${baseUrl}/api/businesses`);
-  const businesses = await res.json();
-
-  return {
-    props: {
-      businesses,
-    },
-  };
+interface PageProps {
+  ssrBusinesses: FeaturedBusinessData | null;
+  ssrCategories: Category[] | null;
 }
 
-export default function CategoryPage({ businesses }: { businesses: any[] }) {
+export async function getServerSideProps() {
+  try {
+    const [bizRes, catRes] = await Promise.all([
+      serverApi.get("/business/getAllFeatureBusiness", { params: { page: 1, limit: 20 } }),
+      serverApi.get("/categories/"),
+    ]);
+
+    return {
+      props: {
+        ssrBusinesses: bizRes.data.data ?? null,
+        ssrCategories: catRes.data.data ?? null,
+      },
+    };
+  } catch {
+    return { props: { ssrBusinesses: null, ssrCategories: null } };
+  }
+}
+
+export default function CategoryPage({ ssrBusinesses, ssrCategories }: PageProps) {
   const router = useRouter();
   const { category: queryCategory } = router.query;
-  const [activeCategory, setActiveCategory] = useState("All");
-  const [activeFilter, setActiveFilter] = useState<string | null>(null);
+  const { location } = useGeolocation();
+
+  const [activeCategory, setActiveCategory] = useState<string>("All");
+  const [activeFilter, setActiveFilter] = useState<FeaturedBusinessParams["sort"] | null>(null);
+  const [maxDistance, setMaxDistance] = useState<number | null>(null);
+  const [minRating, setMinRating] = useState<number | null>(null);
+
+  const { data: apiCategories } = useCategories(ssrCategories ?? undefined);
 
   useEffect(() => {
     if (!queryCategory) {
       setActiveCategory("All");
       return;
     }
-
-    const normalized = (queryCategory as string).toLowerCase();
-    const matchedCategory = allCategories.find((cat) => cat.name.toLowerCase() === normalized);
-    setActiveCategory(matchedCategory ? matchedCategory.name : "All");
+    setActiveCategory(queryCategory as string);
   }, [queryCategory]);
 
-  const filteredBusinesses = useMemo(() => {
-    if (activeCategory === "All") {
-      return businesses;
-    }
+  const selectedCategoryId = useMemo(() => {
+    if (activeCategory === "All" || !apiCategories) return undefined;
+    const found = apiCategories.find((c) => c.name.toLowerCase() === activeCategory.toLowerCase());
+    return found?.id;
+  }, [activeCategory, apiCategories]);
 
-    const normalizedCategory = activeCategory.toLowerCase();
-    return businesses.filter((biz) => biz.category.toLowerCase().includes(normalizedCategory));
-  }, [activeCategory]);
+  const params: FeaturedBusinessParams = {
+    page: 1,
+    limit: 20,
+    ...(location && { lat: location.lat, long: location.long }),
+    ...(selectedCategoryId && { category_id: selectedCategoryId }),
+    ...(activeFilter && { sort: activeFilter }),
+    ...(maxDistance && { max_distance: maxDistance }),
+    ...(minRating && { min_rating: minRating }),
+  };
+
+  // Use SSR data as initialData only when no filters applied (default state)
+  const isDefaultState = activeCategory === "All" && !activeFilter && !maxDistance && !minRating;
+  const { data, isLoading } = useFeaturedBusinesses(
+    params,
+    isDefaultState ? (ssrBusinesses ?? undefined) : undefined
+  );
+  const businesses = data?.businesses ?? [];
+
+  const allCategories = useMemo(() => {
+    const cats = [{ name: "All", icon: Star }];
+    if (apiCategories) {
+      apiCategories.forEach((c) => {
+        cats.push({ name: c.name, icon: iconMap[c.name.toLowerCase()] || Sparkles });
+      });
+    }
+    return cats;
+  }, [apiCategories]);
+
+  const pageTitle = activeCategory === "All"
+    ? "Explore All Businesses & Services — Sunday Hundred"
+    : `Best ${activeCategory} Services Near You — Sunday Hundred`;
 
   return (
-    <Layout>
-      <div className="container py-6 md:py-10">
-        <h1 className="font-display text-2xl md:text-3xl font-bold mb-6">Explore Categories</h1>
+    <>
+      <Head>
+        <title>{pageTitle}</title>
+        <meta name="description" content={`Browse top-rated ${activeCategory === "All" ? "" : activeCategory + " "}businesses. Book salons, spas, gyms and more near you.`} />
+      </Head>
+      <Layout>
+        <div className="container py-6 md:py-10">
+          <h1 className="font-display text-2xl md:text-3xl font-bold mb-6">Explore Categories</h1>
 
-        {/* Category pills */}
-        <div className="flex gap-2 overflow-x-auto pb-4 scrollbar-none mb-6">
-          {allCategories.map((cat) => (
-            <button
-              key={cat.name}
-              onClick={() => setActiveCategory(cat.name)}
-              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium whitespace-nowrap transition-all shrink-0 ${
-                activeCategory === cat.name
-                  ? "gradient-gold text-primary-foreground"
-                  : "bg-card shadow-card text-card-foreground hover:bg-accent"
-              }`}
-            >
-              <cat.icon className="h-4 w-4" />
-              {cat.name}
-            </button>
-          ))}
-        </div>
-
-        <div className="flex flex-col lg:flex-row gap-8">
-          {/* Sidebar Filters (desktop) */}
-          <aside className="hidden lg:block w-64 shrink-0">
-            <div className="sticky top-24 rounded-2xl bg-card shadow-card p-5">
-              <div className="flex items-center gap-2 mb-4">
-                <SlidersHorizontal className="h-4 w-4 text-gold" />
-                <h3 className="font-semibold text-sm">Filters</h3>
-              </div>
-              <div className="space-y-2">
-                {filterButtons.map((f) => (
-                  <button
-                    key={f.label}
-                    onClick={() => setActiveFilter(activeFilter === f.label ? null : f.label)}
-                    className={`w-full flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all ${
-                      activeFilter === f.label
-                        ? "bg-accent text-accent-foreground"
-                        : "text-muted-foreground hover:bg-secondary"
-                    }`}
-                  >
-                    <f.icon className="h-4 w-4" />
-                    {f.label}
-                  </button>
-                ))}
-              </div>
-
-              <div className="mt-6 pt-4 border-t border-border">
-                <h4 className="text-xs text-muted-foreground mb-3">DISTANCE</h4>
-                <div className="space-y-1.5">
-                  {["< 1 km", "1-3 km", "3-5 km", "5+ km"].map((d) => (
-                    <label key={d} className="flex items-center gap-2 text-sm cursor-pointer hover:text-foreground text-muted-foreground">
-                      <input type="checkbox" className="rounded border-border accent-gold-dark" />
-                      {d}
-                    </label>
-                  ))}
-                </div>
-              </div>
-
-              <div className="mt-6 pt-4 border-t border-border">
-                <h4 className="text-xs text-muted-foreground mb-3">RATING</h4>
-                <div className="space-y-1.5">
-                  {["4.5+", "4.0+", "3.5+"].map((r) => (
-                    <label key={r} className="flex items-center gap-2 text-sm cursor-pointer hover:text-foreground text-muted-foreground">
-                      <input type="checkbox" className="rounded border-border accent-gold-dark" />
-                      <Star className="h-3 w-3 fill-gold text-gold" /> {r}
-                    </label>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </aside>
-
-          {/* Mobile Filters */}
-          <div className="lg:hidden flex gap-2 overflow-x-auto pb-2 scrollbar-none">
-            {filterButtons.map((f) => (
+          {/* Category pills */}
+          <div className="flex gap-2 overflow-x-auto pb-4 scrollbar-none mb-6">
+            {allCategories.map((cat) => (
               <button
-                key={f.label}
-                onClick={() => setActiveFilter(activeFilter === f.label ? null : f.label)}
-                className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium whitespace-nowrap transition-all shrink-0 ${
-                  activeFilter === f.label
-                    ? "bg-accent text-accent-foreground"
-                    : "bg-card shadow-card text-card-foreground"
+                key={cat.name}
+                onClick={() => setActiveCategory(cat.name)}
+                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium whitespace-nowrap transition-all shrink-0 ${
+                  activeCategory === cat.name
+                    ? "gradient-gold text-primary-foreground"
+                    : "bg-card shadow-card text-card-foreground hover:bg-accent"
                 }`}
               >
-                <f.icon className="h-3.5 w-3.5" />
-                {f.label}
+                <cat.icon className="h-4 w-4" />
+                {cat.name}
               </button>
             ))}
           </div>
 
-          {/* Results Grid */}
-          <div className="flex-1">
-            <p className="text-sm text-muted-foreground mb-4">{filteredBusinesses.length} businesses found</p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5">
-              {filteredBusinesses.map((biz, i) => (
-                <motion.div
-                  key={biz.id}
-                  initial={{ opacity: 0, y: 15 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: i * 0.05, duration: 0.35 }}
+          <div className="flex flex-col lg:flex-row gap-8">
+            {/* Sidebar Filters (desktop) */}
+            <aside className="hidden lg:block w-64 shrink-0">
+              <div className="sticky top-24 rounded-2xl bg-card shadow-card p-5">
+                <div className="flex items-center gap-2 mb-4">
+                  <SlidersHorizontal className="h-4 w-4 text-gold" />
+                  <h3 className="font-semibold text-sm">Filters</h3>
+                </div>
+                <div className="space-y-2">
+                  {filterButtons.map((f) => (
+                    <button
+                      key={f.label}
+                      onClick={() => setActiveFilter(activeFilter === f.value ? null : f.value)}
+                      className={`w-full flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all ${
+                        activeFilter === f.value
+                          ? "bg-accent text-accent-foreground"
+                          : "text-muted-foreground hover:bg-secondary"
+                      }`}
+                    >
+                      <f.icon className="h-4 w-4" />
+                      {f.label}
+                    </button>
+                  ))}
+                </div>
+
+                <div className="mt-6 pt-4 border-t border-border">
+                  <h4 className="text-xs text-muted-foreground mb-3">DISTANCE</h4>
+                  <div className="space-y-1.5">
+                    {[
+                      { label: "< 1 km", value: 1 },
+                      { label: "< 3 km", value: 3 },
+                      { label: "< 5 km", value: 5 },
+                      { label: "< 10 km", value: 10 },
+                    ].map((d) => (
+                      <button
+                        key={d.value}
+                        onClick={() => setMaxDistance(maxDistance === d.value ? null : d.value)}
+                        className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-all ${
+                          maxDistance === d.value
+                            ? "bg-accent text-accent-foreground font-medium"
+                            : "text-muted-foreground hover:text-foreground hover:bg-secondary"
+                        }`}
+                      >
+                        <MapPin className="h-3.5 w-3.5" />
+                        {d.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="mt-6 pt-4 border-t border-border">
+                  <h4 className="text-xs text-muted-foreground mb-3">RATING</h4>
+                  <div className="space-y-1.5">
+                    {[
+                      { label: "4.5+", value: 4.5 },
+                      { label: "4.0+", value: 4 },
+                      { label: "3.5+", value: 3.5 },
+                    ].map((r) => (
+                      <button
+                        key={r.value}
+                        onClick={() => setMinRating(minRating === r.value ? null : r.value)}
+                        className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-all ${
+                          minRating === r.value
+                            ? "bg-accent text-accent-foreground font-medium"
+                            : "text-muted-foreground hover:text-foreground hover:bg-secondary"
+                        }`}
+                      >
+                        <Star className="h-3.5 w-3.5 fill-gold text-gold" />
+                        {r.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </aside>
+
+            {/* Mobile Filters */}
+            <div className="lg:hidden flex gap-2 overflow-x-auto pb-2 scrollbar-none">
+              {filterButtons.map((f) => (
+                <button
+                  key={f.label}
+                  onClick={() => setActiveFilter(activeFilter === f.value ? null : f.value)}
+                  className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium whitespace-nowrap transition-all shrink-0 ${
+                    activeFilter === f.value
+                      ? "bg-accent text-accent-foreground"
+                      : "bg-card shadow-card text-card-foreground"
+                  }`}
                 >
-                  <BusinessCard {...biz} />
-                </motion.div>
+                  <f.icon className="h-3.5 w-3.5" />
+                  {f.label}
+                </button>
               ))}
+              {[
+                { label: "< 3 km", value: 3 },
+                { label: "< 5 km", value: 5 },
+                { label: "< 10 km", value: 10 },
+              ].map((d) => (
+                <button
+                  key={`dist-${d.value}`}
+                  onClick={() => setMaxDistance(maxDistance === d.value ? null : d.value)}
+                  className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium whitespace-nowrap transition-all shrink-0 ${
+                    maxDistance === d.value
+                      ? "bg-accent text-accent-foreground"
+                      : "bg-card shadow-card text-card-foreground"
+                  }`}
+                >
+                  <MapPin className="h-3.5 w-3.5" />
+                  {d.label}
+                </button>
+              ))}
+              {[
+                { label: "4.5+ ★", value: 4.5 },
+                { label: "4.0+ ★", value: 4 },
+              ].map((r) => (
+                <button
+                  key={`rate-${r.value}`}
+                  onClick={() => setMinRating(minRating === r.value ? null : r.value)}
+                  className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium whitespace-nowrap transition-all shrink-0 ${
+                    minRating === r.value
+                      ? "bg-accent text-accent-foreground"
+                      : "bg-card shadow-card text-card-foreground"
+                  }`}
+                >
+                  {r.label}
+                </button>
+              ))}
+            </div>
+
+            {/* Results Grid */}
+            <div className="flex-1">
+              <p className="text-sm text-muted-foreground mb-4">
+                {isLoading ? "Loading..." : `${businesses.length} businesses found`}
+              </p>
+
+              {isLoading ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5">
+                  {Array.from({ length: 6 }).map((_, i) => (
+                    <div key={i} className="rounded-2xl bg-card shadow-card animate-pulse">
+                      <div className="aspect-[4/3] bg-secondary rounded-t-2xl" />
+                      <div className="p-4 space-y-3">
+                        <div className="h-4 bg-secondary rounded w-3/4" />
+                        <div className="h-3 bg-secondary rounded w-1/2" />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5">
+                  {businesses.map((biz, i) => (
+                    <motion.div
+                      key={biz.id}
+                      initial={{ opacity: 0, y: 15 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: i * 0.05, duration: 0.35 }}
+                    >
+                      <BusinessCard {...biz} />
+                    </motion.div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         </div>
-      </div>
-    </Layout>
+      </Layout>
+    </>
   );
 }

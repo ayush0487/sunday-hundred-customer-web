@@ -4,7 +4,7 @@ import { LucideIcon } from "lucide-react";
 interface CategoryCardProps {
   name: string;
   icon: LucideIcon;
-  count: number;
+  count?: number;
   href: string;
 }
 
@@ -19,7 +19,7 @@ export function CategoryCard({ name, icon: Icon, count, href }: CategoryCardProp
       </div>
       <div className="text-center">
         <p className="font-medium text-sm text-card-foreground">{name}</p>
-        <p className="text-xs text-muted-foreground">{count} services</p>
+        {count != null && <p className="text-xs text-muted-foreground">{count} services</p>}
       </div>
     </Link>
   );

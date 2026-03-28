@@ -6,10 +6,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { getCurrentUser, registerUser } from "@/lib/auth";
+import { useSignup } from "@/hooks/useAuth";
 
 export default function SignUpPage() {
   const router = useRouter();
+  const signupMutation = useSignup();
 
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -18,11 +19,10 @@ export default function SignUpPage() {
   const [confirmPassword, setConfirmPassword] = useState("");
 
   const [error, setError] = useState<string | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
-    // If already logged in, go to profile.
-    if (getCurrentUser()) {
+    const token = localStorage.getItem("token");
+    if (token) {
       router.replace("/profile");
     }
   }, [router]);
@@ -55,21 +55,18 @@ export default function SignUpPage() {
       return;
     }
 
-    setIsSubmitting(true);
-    const result = registerUser({
-      name: trimmedName,
-      email: trimmedEmail,
-      phone: trimmedPhone,
-      password,
-    });
-    setIsSubmitting(false);
-
-    if (result.ok === false) {
-      setError(result.error);
-      return;
-    }
-
-    router.push("/profile");
+    signupMutation.mutate(
+      { name: trimmedName, email: trimmedEmail, phone: trimmedPhone, password },
+      {
+        onSuccess: ({ data }) => {
+          localStorage.setItem("user", JSON.stringify(data.data.user));
+          router.push("/profile");
+        },
+        onError: (err: any) => {
+          setError(err.message || "Signup failed. Please try again.");
+        },
+      }
+    );
   };
 
   return (
@@ -78,7 +75,7 @@ export default function SignUpPage() {
         <Card className="rounded-2xl shadow-elevated">
           <CardHeader>
             <CardTitle className="font-display">Create account</CardTitle>
-            <CardDescription>Sign up using local storage.</CardDescription>
+            <CardDescription>Sign up to get started.</CardDescription>
           </CardHeader>
           <CardContent>
             <form className="space-y-4" onSubmit={onSubmit}>
@@ -100,7 +97,7 @@ export default function SignUpPage() {
 
               <div className="space-y-2">
                 <Label htmlFor="phone">Phone</Label>
-                <Input id="phone" type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+91 98765 43210" />
+                <Input id="phone" type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="03001234567" />
               </div>
 
               <div className="space-y-2">
@@ -120,8 +117,8 @@ export default function SignUpPage() {
 
               {error ? <p className="text-sm text-destructive">{error}</p> : null}
 
-              <Button type="submit" className="w-full" disabled={isSubmitting}>
-                {isSubmitting ? "Creating..." : "Sign up"}
+              <Button type="submit" className="w-full" disabled={signupMutation.isPending}>
+                {signupMutation.isPending ? "Creating..." : "Sign up"}
               </Button>
 
               <p className="text-sm text-muted-foreground text-center">

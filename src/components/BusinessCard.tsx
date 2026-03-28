@@ -7,18 +7,40 @@ const FALLBACK_BUSINESS_IMAGE = "https://images.unsplash.com/photo-1562322140-8b
 interface BusinessCardProps {
   id: string;
   name: string;
-  image: string;
+  image?: string;
   rating: number;
-  reviews: number;
-  distance: string;
-  category: string;
+  total_reviews?: number;
+  reviews?: number;
+  distance?: string;
+  distance_km?: number;
+  category?: string;
+  category_name?: string;
   tags?: string[];
   offer?: string;
   showOffer?: boolean;
   showTags?: boolean;
 }
 
-export function BusinessCard({ id, name, image, rating, reviews, distance, category, tags, offer, showOffer = true, showTags = true }: BusinessCardProps) {
+export function BusinessCard({
+  id,
+  name,
+  image,
+  rating,
+  total_reviews,
+  reviews,
+  distance,
+  distance_km,
+  category,
+  category_name,
+  tags,
+  offer,
+  showOffer = true,
+  showTags = true,
+}: BusinessCardProps) {
+  const reviewCount = total_reviews ?? reviews ?? 0;
+  const distanceText = distance ?? (distance_km != null ? `${distance_km} km` : "");
+  const categoryText = category_name ?? category ?? "";
+
   return (
     <Link
       href={`/business/${id}`}
@@ -26,7 +48,7 @@ export function BusinessCard({ id, name, image, rating, reviews, distance, categ
     >
       <div className="relative aspect-[4/3] overflow-hidden">
         <img
-          src={image}
+          src={image || FALLBACK_BUSINESS_IMAGE}
           alt={name}
           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
           onError={(event) => {
@@ -40,18 +62,20 @@ export function BusinessCard({ id, name, image, rating, reviews, distance, categ
             {offer}
           </div>
         )}
-        <div className="absolute bottom-3 right-3">
-          <div className="px-2 py-1 rounded-md glass text-xs font-medium flex items-center gap-1">
-            <MapPin className="h-3 w-3" /> {distance}
+        {distanceText && (
+          <div className="absolute bottom-3 right-3">
+            <div className="px-2 py-1 rounded-md glass text-xs font-medium flex items-center gap-1">
+              <MapPin className="h-3 w-3" /> {distanceText}
+            </div>
           </div>
-        </div>
+        )}
       </div>
       <div className="p-4">
         <div className="flex items-start justify-between gap-2 mb-2">
           <h3 className="font-display font-semibold text-card-foreground line-clamp-1">{name}</h3>
-          <StarRating rating={rating} count={reviews} />
+          <StarRating rating={rating} count={reviewCount} />
         </div>
-        <p className="text-xs text-muted-foreground mb-3">{category}</p>
+        {categoryText && <p className="text-xs text-muted-foreground mb-3">{categoryText}</p>}
         {showTags && tags && tags.length > 0 && (
           <div className="flex flex-wrap gap-1.5">
             {tags.map((tag) => (
