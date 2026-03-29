@@ -11,7 +11,7 @@ export type UserProfile = typeof defaultUserProfile;
 
 export function getUserProfile(): UserProfile {
   const currentUser = getCurrentUser();
-
+  console.log("Loaded user profile:", currentUser);
   if (!currentUser) {
     return defaultUserProfile;
   }

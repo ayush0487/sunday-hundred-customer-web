@@ -1,14 +1,11 @@
-export type StoredUser = {
-  id: string;
-  name: string;
-  email: string;
-  phone: string;
-  password: string;
+import type { AuthData, User } from "@/types/api.types";
+
+export type StoredUser = User & {
   photoUrl: string | null;
 };
 
-const USERS_KEY = "servx_users";
-const SESSION_KEY = "servx_current_user_email";
+const TOKEN_KEY = "token";
+const USER_KEY = "user";
 
 function hasWindow() {
   return typeof window !== "undefined";
@@ -27,56 +24,141 @@ function safeJsonParse<T>(value: string | null): T | null {
 }
 
 export function loadUsers(): StoredUser[] {
-  if (!hasWindow()) {
-    return [];
-  }
-
-  const users = safeJsonParse<StoredUser[]>(window.localStorage.getItem(USERS_KEY));
-  return Array.isArray(users) ? users : [];
+  return [];
 }
 
 export function saveUsers(users: StoredUser[]) {
+  void users;
+}
+
+function normalizeStoredUser(user: User): StoredUser {
+  return {
+    ...user,
+    photoUrl: user.avatar ?? null,
+  };
+}
+
+function readStoredUser(): StoredUser | null {
+  if (!hasWindow()) {
+    return null;
+  }
+
+  const parsed = safeJsonParse<User>(window.localStorage.getItem(USER_KEY));
+  if (!parsed) {
+    return null;
+  }
+
+  return normalizeStoredUser(parsed);
+}
+
+function decodeTokenUser(token: string): Partial<StoredUser> | null {
+  try {
+    const [, payload] = token.split(".");
+    if (!payload) {
+      return null;
+    }
+
+    const normalizedPayload = payload.replace(/-/g, "+").replace(/_/g, "/");
+    const paddedPayload = normalizedPayload.padEnd(normalizedPayload.length + ((4 - (normalizedPayload.length % 4)) % 4), "=");
+    const decoded = JSON.parse(atob(paddedPayload));
+    return {
+      id: decoded.id,
+      name: decoded.name,
+      email: decoded.email,
+      phone: decoded.phone,
+      role: decoded.role,
+      avatar: decoded.avatar ?? null,
+      photoUrl: decoded.avatar ?? null,
+    };
+  } catch {
+    return null;
+  }
+}
+
+function persistUser(user: StoredUser) {
   if (!hasWindow()) {
     return;
   }
 
-  window.localStorage.setItem(USERS_KEY, JSON.stringify(users));
+  const { photoUrl, ...rest } = user;
+  window.localStorage.setItem(
+    USER_KEY,
+    JSON.stringify({
+      ...rest,
+      avatar: photoUrl,
+    })
+  );
+}
+
+export function setAuthSession(authData: AuthData) {
+  if (!hasWindow()) {
+    return;
+  }
+
+  window.localStorage.setItem(TOKEN_KEY, authData.token);
+  persistUser(normalizeStoredUser(authData.user));
+}
+
+export function getAuthToken(): string | null {
+  if (!hasWindow()) {
+    return null;
+  }
+
+  return window.localStorage.getItem(TOKEN_KEY);
+}
+
+export function isAuthenticated(): boolean {
+  return Boolean(getAuthToken());
 }
 
 export function getCurrentUserEmail(): string | null {
-  if (!hasWindow()) {
-    return null;
-  }
-
-  const email = window.localStorage.getItem(SESSION_KEY);
-  return email ? email : null;
+  return getCurrentUser()?.email ?? null;
 }
 
 export function setCurrentUserEmail(email: string | null) {
+  void email;
+}
+
+export function getCurrentUser(): StoredUser | null {
+  const localUser = readStoredUser();
+  if (localUser) {
+    return localUser;
+  }
+
+  const token = getAuthToken();
+  if (!token) {
+    return null;
+  }
+
+  const decodedUser = decodeTokenUser(token);
+  if (!decodedUser || !decodedUser.email) {
+    return null;
+  }
+
+  const fallbackUser: StoredUser = {
+    id: decodedUser.id ?? "",
+    name: decodedUser.name ?? "",
+    email: decodedUser.email,
+    phone: decodedUser.phone ?? "",
+    avatar: decodedUser.avatar ?? null,
+    role: decodedUser.role ?? "customer",
+    is_active: true,
+    photoUrl: decodedUser.photoUrl ?? null,
+    created_at: undefined,
+  };
+
+  persistUser(fallbackUser);
+  return fallbackUser;
+}
+
+export function logout() {
   if (!hasWindow()) {
     return;
   }
 
-  if (!email) {
-    window.localStorage.removeItem(SESSION_KEY);
-    return;
-  }
-
-  window.localStorage.setItem(SESSION_KEY, email);
-}
-
-export function getCurrentUser(): StoredUser | null {
-  const email = getCurrentUserEmail();
-  if (!email) {
-    return null;
-  }
-
-  const users = loadUsers();
-  return users.find((u) => u.email.toLowerCase() === email.toLowerCase()) ?? null;
-}
-
-export function logout() {
-  setCurrentUserEmail(null);
+  window.localStorage.removeItem(TOKEN_KEY);
+  window.localStorage.removeItem(USER_KEY);
+  window.localStorage.removeItem("servx_current_user_email");
 }
 
 function randomId() {
@@ -89,103 +171,37 @@ export function registerUser(input: {
   phone: string;
   password: string;
 }): { ok: true } | { ok: false; error: string } {
-  if (!hasWindow()) {
-    return { ok: false, error: "Registration is only available in the browser." };
-  }
-
-  const name = input.name.trim();
-  const email = input.email.trim().toLowerCase();
-  const phone = input.phone.trim();
-  const password = input.password;
-
-  if (!name || !email || !phone || !password) {
-    return { ok: false, error: "Please fill all fields." };
-  }
-
-  const users = loadUsers();
-  const exists = users.some((u) => u.email.toLowerCase() === email);
-  if (exists) {
-    return { ok: false, error: "An account with this email already exists." };
-  }
-
-  const newUser: StoredUser = {
-    id: randomId(),
-    name,
-    email,
-    phone,
-    password,
-    photoUrl: null,
-  };
-
-  saveUsers([newUser, ...users]);
-  setCurrentUserEmail(email);
-
-  return { ok: true };
+  void input;
+  return { ok: false, error: "Use API signup flow." };
 }
 
 export function login(input: {
   email: string;
   password: string;
 }): { ok: true } | { ok: false; error: string } {
-  if (!hasWindow()) {
-    return { ok: false, error: "Login is only available in the browser." };
-  }
-
-  const email = input.email.trim().toLowerCase();
-  const password = input.password;
-
-  if (!email || !password) {
-    return { ok: false, error: "Please enter your email and password." };
-  }
-
-  const users = loadUsers();
-  const user = users.find((u) => u.email.toLowerCase() === email);
-
-  if (!user || user.password !== password) {
-    return { ok: false, error: "Invalid email or password." };
-  }
-
-  setCurrentUserEmail(user.email);
-  return { ok: true };
+  void input;
+  return { ok: false, error: "Use API login flow." };
 }
 
 export function updateCurrentUser(update: Partial<Omit<StoredUser, "id" | "email">>): { ok: true } | { ok: false; error: string } {
-  if (!hasWindow()) {
-    return { ok: false, error: "Update is only available in the browser." };
-  }
-
-  const email = getCurrentUserEmail();
-  if (!email) {
+  const existingUser = getCurrentUser();
+  if (!existingUser) {
     return { ok: false, error: "Not logged in." };
   }
 
-  const users = loadUsers();
-  const index = users.findIndex((u) => u.email.toLowerCase() === email.toLowerCase());
-
-  if (index === -1) {
-    return { ok: false, error: "User not found." };
-  }
-
-  const existing = users[index];
   const next: StoredUser = {
-    ...existing,
+    ...existingUser,
     ...update,
   };
 
-  const nextUsers = [...users];
-  nextUsers[index] = next;
-  saveUsers(nextUsers);
+  persistUser(next);
 
   return { ok: true };
 }
 
 export function updateCurrentUserEmail(newEmailRaw: string): { ok: true } | { ok: false; error: string } {
-  if (!hasWindow()) {
-    return { ok: false, error: "Update is only available in the browser." };
-  }
-
-  const currentEmail = getCurrentUserEmail();
-  if (!currentEmail) {
+  const existingUser = getCurrentUser();
+  if (!existingUser) {
     return { ok: false, error: "Not logged in." };
   }
 
@@ -198,24 +214,10 @@ export function updateCurrentUserEmail(newEmailRaw: string): { ok: true } | { ok
     return { ok: false, error: "Please enter a valid email." };
   }
 
-  const users = loadUsers();
-  const currentIndex = users.findIndex((u) => u.email.toLowerCase() === currentEmail.toLowerCase());
-  if (currentIndex === -1) {
-    return { ok: false, error: "User not found." };
-  }
-
-  const exists = users.some((u, i) => i !== currentIndex && u.email.toLowerCase() === nextEmail);
-  if (exists) {
-    return { ok: false, error: "An account with this email already exists." };
-  }
-
-  const nextUsers = [...users];
-  nextUsers[currentIndex] = {
-    ...nextUsers[currentIndex],
+  persistUser({
+    ...existingUser,
     email: nextEmail,
-  };
-  saveUsers(nextUsers);
-  setCurrentUserEmail(nextEmail);
+  });
 
   return { ok: true };
 }

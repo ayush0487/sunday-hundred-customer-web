@@ -58,8 +58,7 @@ export default function SignUpPage() {
     signupMutation.mutate(
       { name: trimmedName, email: trimmedEmail, phone: trimmedPhone, password },
       {
-        onSuccess: ({ data }) => {
-          localStorage.setItem("user", JSON.stringify(data.data.user));
+        onSuccess: () => {
           router.push("/profile");
         },
         onError: (err: any) => {

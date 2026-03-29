@@ -6,4 +6,8 @@ export const reviewService = {
   getByBusiness(businessId: string | number, params?: ReviewParams) {
     return api.get<ApiResponse<ReviewData>>(ENDPOINTS.REVIEWS(businessId), { params });
   },
+
+  getByUser(userId: string | number, params?: ReviewParams) {
+    return api.get<ApiResponse<ReviewData>>(ENDPOINTS.REVIEWS_BY_USER(userId), { params });
+  },
 };

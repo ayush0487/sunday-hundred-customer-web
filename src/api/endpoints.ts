@@ -10,6 +10,7 @@ export const ENDPOINTS = {
 
   // Reviews
   REVIEWS: (businessId: string | number) => `/reviews/${businessId}`,
+  REVIEWS_BY_USER: (userId: string | number) => `/reviews/user/${userId}`,
 
   // Categories
   CATEGORIES: "/categories/",

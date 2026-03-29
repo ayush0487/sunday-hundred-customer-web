@@ -32,10 +32,7 @@ export default function LoginPage() {
     loginMutation.mutate(
       { email, password },
       {
-        onSuccess: ({ data }) => {
-          // Store user info for profile page
-          localStorage.setItem("user", JSON.stringify(data.data.user));
-
+        onSuccess: () => {
           const returnToParam = router.query.returnTo;
           const returnTo = typeof returnToParam === "string" && returnToParam ? returnToParam : "/profile";
           router.push(returnTo);

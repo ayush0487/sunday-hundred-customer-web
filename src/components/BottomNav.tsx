@@ -5,7 +5,7 @@ import { useRouter } from "next/router";
 const items = [
   { icon: Home, label: "Home", path: "/" },
   { icon: Grid3X3, label: "Categories", path: "/categories" },
-  { icon: Bookmark, label: "Saved", path: "/profile" },
+  // { icon: Bookmark, label: "Saved", path: "/profile" },
   { icon: User, label: "Profile", path: "/profile" },
 ];
 

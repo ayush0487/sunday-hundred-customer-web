@@ -10,3 +10,12 @@ export function useReviews(businessId: string | number, params?: ReviewParams, i
     initialData,
   });
 }
+
+export function useUserReviews(userId: string | number, params?: ReviewParams, initialData?: ReviewData) {
+  return useQuery({
+    queryKey: ["user-reviews", userId, params],
+    queryFn: () => reviewService.getByUser(userId, params).then((res) => res.data.data),
+    enabled: !!userId,
+    initialData,
+  });
+}

@@ -5,7 +5,7 @@ import { useRouter } from "next/router";
 import { Layout } from "@/components/Layout";
 import { Button } from "@/components/ui/button";
 import { UserProfile, defaultUserProfile, getUserProfile } from "@/data/profile";
-import { getCurrentUserEmail, logout } from "@/lib/auth";
+import { getAuthToken, getCurrentUser, getCurrentUserEmail, logout } from "@/lib/auth";
 
 const menuItems = [
   { label: "My Profile", icon: User },
@@ -19,9 +19,17 @@ export default function Profile() {
   const [showLogout, setShowLogout] = useState(false);
 
   useEffect(() => {
+    const token = getAuthToken();
+    const currentUser = getCurrentUser();
+    if (!token || !currentUser) {
+      logout();
+      router.replace("/login?returnTo=/profile");
+      return;
+    }
+
     setProfile(getUserProfile());
     setShowLogout(Boolean(getCurrentUserEmail()));
-  }, []);
+  }, [router]);
 
   return (
     <Layout>
@@ -75,6 +83,11 @@ export default function Profile() {
               onClick={() => {
                 if (item.label === "My Profile") {
                   router.push("/profile/manage");
+                  return;
+                }
+
+                if (item.label === "My Reviews") {
+                  router.push("/profile/reviews");
                 }
               }}
             >

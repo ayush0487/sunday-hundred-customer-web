@@ -105,8 +105,12 @@ export interface Review {
   business_id: string;
   rating: number;
   comment: string;
-  reviewer_name: string;
-  reviewer_avatar: string | null;
+  reply?: string | null;
+  replied_at?: string | null;
+  reviewer_name?: string;
+  reviewer_avatar?: string | null;
+  user_name?: string;
+  user_avatar?: string | null;
   created_at: string;
 }
 

@@ -7,6 +7,7 @@ import { Layout } from "@/components/Layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { UserProfile, defaultUserProfile, getUserProfile, saveUserProfile } from "@/data/profile";
+import { getAuthToken, getCurrentUser, logout } from "@/lib/auth";
 
 export default function ManageProfile() {
   const router = useRouter();
@@ -16,12 +17,20 @@ export default function ManageProfile() {
   const [photoUrl, setPhotoUrl] = useState<string | null>(defaultUserProfile.photoUrl);
 
   useEffect(() => {
+    const token = getAuthToken();
+    const currentUser = getCurrentUser();
+    if (!token || !currentUser) {
+      logout();
+      router.replace("/login?returnTo=/profile/manage");
+      return;
+    }
+
     const loaded = getUserProfile();
     setProfile(loaded);
     setEmail(loaded.email);
     setPhone(loaded.phone);
     setPhotoUrl(loaded.photoUrl);
-  }, []);
+  }, [router]);
 
   const onPhotoChange = (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
