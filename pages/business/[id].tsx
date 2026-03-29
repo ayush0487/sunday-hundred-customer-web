@@ -24,6 +24,20 @@ interface PageProps {
   ssrReviews: ReviewData | null;
 }
 
+function formatReviewDate(value: string): string {
+  const parsed = new Date(value);
+
+  if (Number.isNaN(parsed.getTime())) {
+    return value;
+  }
+
+  const day = String(parsed.getUTCDate()).padStart(2, "0");
+  const month = String(parsed.getUTCMonth() + 1).padStart(2, "0");
+  const year = parsed.getUTCFullYear();
+
+  return `${day}/${month}/${year}`;
+}
+
 export async function getServerSideProps(context: GetServerSidePropsContext) {
   const { id } = context.params as { id: string };
 
@@ -240,7 +254,7 @@ export default function BusinessDetail({ ssrBusiness, ssrReviews }: PageProps) {
                           <div className="flex-1">
                             <p className="font-medium text-sm">{rev.reviewer_name}</p>
                             <p className="text-xs text-muted-foreground">
-                              {new Date(rev.created_at).toLocaleDateString()}
+                              {formatReviewDate(rev.created_at)}
                             </p>
                           </div>
                           <div className="flex items-center gap-0.5">
