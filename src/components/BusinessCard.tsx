@@ -8,6 +8,7 @@ interface BusinessCardProps {
   id: string;
   name: string;
   image?: string;
+  image_url?: string;
   rating: number;
   total_reviews?: number;
   reviews?: number;
@@ -25,6 +26,7 @@ export function BusinessCard({
   id,
   name,
   image,
+  image_url,
   rating,
   total_reviews,
   reviews,
@@ -40,6 +42,7 @@ export function BusinessCard({
   const reviewCount = total_reviews ?? reviews ?? 0;
   const distanceText = distance ?? (distance_km != null ? `${distance_km} km` : "");
   const categoryText = category_name ?? category ?? "";
+  const businessImage = image_url || image || FALLBACK_BUSINESS_IMAGE;
 
   return (
     <Link
@@ -48,7 +51,7 @@ export function BusinessCard({
     >
       <div className="relative aspect-[4/3] overflow-hidden">
         <img
-          src={image || FALLBACK_BUSINESS_IMAGE}
+          src={businessImage}
           alt={name}
           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
           onError={(event) => {

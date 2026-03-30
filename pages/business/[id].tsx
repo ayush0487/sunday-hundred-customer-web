@@ -5,15 +5,18 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 import { Layout } from "@/components/Layout";
 import { StarRating } from "@/components/StarRating";
+import { OfferCard } from "@/components/OfferCard";
+import { ReviewForm } from "@/components/ReviewForm";
 import { useRouter } from "next/router";
 import { useBusinessById } from "@/hooks/useBusiness";
 import { useReviews } from "@/hooks/useReviews";
+import { useOffers } from "@/hooks/useOffers";
 import { useGeolocation } from "@/hooks/useGeolocation";
 import serverApi from "@/api/server";
 import type { GetServerSidePropsContext } from "next";
-import type { Business, ReviewData } from "@/types/api.types";
+import type { Business, ReviewData, OffersData } from "@/types/api.types";
 
-const galleryImages = [
+const placeholderImages = [
   "https://images.unsplash.com/photo-1560066984-138dadb4c035?w=800&h=500&fit=crop",
   "https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?w=800&h=500&fit=crop",
   "https://images.unsplash.com/photo-1544161515-4ab6ce6db874?w=800&h=500&fit=crop",
@@ -22,6 +25,7 @@ const galleryImages = [
 interface PageProps {
   ssrBusiness: Business | null;
   ssrReviews: ReviewData | null;
+  ssrOffers: OffersData | null;
 }
 
 function formatReviewDate(value: string): string {
@@ -42,24 +46,27 @@ export async function getServerSideProps(context: GetServerSidePropsContext) {
   const { id } = context.params as { id: string };
 
   try {
-    const [bizRes, reviewRes] = await Promise.all([
+    const [bizRes, reviewRes, offersRes] = await Promise.all([
       serverApi.get(`/business/getBusinessById/${id}`),
       serverApi.get(`/reviews/${id}`, { params: { page: 1, limit: 10 } }),
+      serverApi.get(`/offers/business/${id}`, { params: { limit: 10, page: 1, active_only: true } }),
     ]);
 
     return {
       props: {
         ssrBusiness: bizRes.data.data ?? null,
         ssrReviews: reviewRes.data.data ?? null,
+        ssrOffers: offersRes.data.data ?? null,
       },
     };
   } catch {
-    return { props: { ssrBusiness: null, ssrReviews: null } };
+    return { props: { ssrBusiness: null, ssrReviews: null, ssrOffers: null } };
   }
 }
 
-export default function BusinessDetail({ ssrBusiness, ssrReviews }: PageProps) {
+export default function BusinessDetail({ ssrBusiness, ssrReviews, ssrOffers }: PageProps) {
   const [currentImage, setCurrentImage] = useState(0);
+  const [reviewRefreshKey, setReviewRefreshKey] = useState(0);
   const router = useRouter();
   const { id } = router.query;
   const { location } = useGeolocation();
@@ -67,11 +74,13 @@ export default function BusinessDetail({ ssrBusiness, ssrReviews }: PageProps) {
   const locationParams = location ? { lat: location.lat, long: location.long } : undefined;
   const { data: biz, isLoading: bizLoading } = useBusinessById(id as string, locationParams, ssrBusiness ?? undefined);
   const { data: reviewData, isLoading: reviewsLoading } = useReviews(id as string, { page: 1, limit: 10 }, ssrReviews ?? undefined);
+  const { data: offersData, isLoading: offersLoading } = useOffers(id as string, { limit: 10, page: 1, active_only: true }, ssrOffers ?? undefined);
 
   const reviews = reviewData?.reviews ?? [];
   const services = biz?.services ?? [];
+  const offers = offersData?.offers ?? [];
 
-  const handleBookNow = () => {
+  const handleBookNow = (serviceName?: string) => {
     const token = localStorage.getItem("token");
     if (!token) {
       const returnTo = router.asPath;
@@ -79,10 +88,19 @@ export default function BusinessDetail({ ssrBusiness, ssrReviews }: PageProps) {
       return;
     }
 
-    window.open(
-      `https://wa.me/919999999999?text=Hi, I'd like to book a service at ${biz?.name}`,
-      "_blank"
-    );
+    const messageText = serviceName
+      ? `Hi, I'd like to book ${serviceName} at ${biz?.name}`
+      : `Hi, I'd like to book a service at ${biz?.name}`;
+
+    // Use whatsapp_no if available, otherwise use contact for calling
+    if (biz?.whatsapp_no) {
+      window.open(
+        `https://wa.me/${biz.whatsapp_no}?text=${encodeURIComponent(messageText)}`,
+        "_blank"
+      );
+    } else if (biz?.contact) {
+      window.location.href = `tel:${biz.contact}`;
+    }
   };
 
   if (bizLoading && !biz) {
@@ -113,6 +131,7 @@ export default function BusinessDetail({ ssrBusiness, ssrReviews }: PageProps) {
   }
 
   const minPrice = services.length > 0 ? Math.min(...services.map((s) => s.price)) : null;
+  const galleryImages = biz?.image_url ? [biz.image_url] : placeholderImages;
 
   return (
     <>
@@ -187,6 +206,31 @@ export default function BusinessDetail({ ssrBusiness, ssrReviews }: PageProps) {
                 )}
               </motion.div>
 
+              {/* Offers */}
+              {(offersLoading || offers.length > 0) && (
+                <div className="mb-10">
+                  <h2 className="font-display text-xl font-bold mb-4">Special Offers</h2>
+                  {offersLoading && !offers.length ? (
+                    <div className="space-y-3">
+                      {Array.from({ length: 3 }).map((_, i) => (
+                        <div key={i} className="p-4 rounded-xl bg-card shadow-card animate-pulse space-y-2">
+                          <div className="h-4 bg-secondary rounded w-3/4" />
+                          <div className="h-3 bg-secondary rounded w-1/2" />
+                        </div>
+                      ))}
+                    </div>
+                  ) : offers.length > 0 ? (
+                    <div className="space-y-3">
+                      {offers.map((offer, i) => (
+                        <OfferCard key={offer.id} offer={offer} index={i} />
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-muted-foreground text-sm">No active offers available.</p>
+                  )}
+                </div>
+              )}
+
               {/* Services */}
               {services.length > 0 && (
                 <div className="mb-10">
@@ -213,7 +257,7 @@ export default function BusinessDetail({ ssrBusiness, ssrReviews }: PageProps) {
                         <div className="flex items-center gap-4">
                           <p className="font-bold text-gold">₹{svc.price}</p>
                           <button
-                            onClick={handleBookNow}
+                            onClick={() => handleBookNow(svc.name)}
                             className="px-4 py-2 rounded-lg gradient-gold text-primary-foreground text-xs font-bold hover:opacity-90 transition-opacity"
                           >
                             Book
@@ -224,6 +268,14 @@ export default function BusinessDetail({ ssrBusiness, ssrReviews }: PageProps) {
                   </div>
                 </div>
               )}
+
+              {/* Review Form */}
+              <div className="mb-6">
+                <ReviewForm
+                  businessId={id as string}
+                  onSuccess={() => setReviewRefreshKey((prev) => prev + 1)}
+                />
+              </div>
 
               {/* Reviews */}
               <div>
@@ -285,11 +337,11 @@ export default function BusinessDetail({ ssrBusiness, ssrReviews }: PageProps) {
                   </div>
                 )}
                 <button
-                  onClick={handleBookNow}
+                  onClick={() => handleBookNow()}
                   className="w-full mt-6 py-3.5 rounded-xl gradient-gold text-primary-foreground font-bold hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
                 >
                   <MessageCircle className="h-5 w-5" />
-                  Book via WhatsApp
+                  {biz?.whatsapp_no ? "Book via WhatsApp" : "Call"}
                 </button>
                 <p className="text-[10px] text-muted-foreground text-center mt-2">Instant confirmation on WhatsApp</p>
               </div>
@@ -300,11 +352,11 @@ export default function BusinessDetail({ ssrBusiness, ssrReviews }: PageProps) {
         {/* Sticky mobile CTA */}
         <div className="lg:hidden fixed bottom-16 left-0 right-0 z-40 p-4 glass border-t border-border">
           <button
-            onClick={handleBookNow}
+            onClick={() => handleBookNow()}
             className="w-full py-3.5 rounded-xl gradient-gold text-primary-foreground font-bold flex items-center justify-center gap-2"
           >
             <MessageCircle className="h-5 w-5" />
-            Book Now via WhatsApp
+            {biz?.whatsapp_no ? "Book Now via WhatsApp" : "Call Now"}
           </button>
         </div>
       </Layout>

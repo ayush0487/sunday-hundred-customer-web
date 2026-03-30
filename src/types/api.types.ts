@@ -75,6 +75,9 @@ export interface Business {
   distance_km?: number;
   created_at: string;
   services?: Service[];
+  whatsapp_no?: string;
+  contact?: string;
+  image_url?: string;
 }
 
 export interface FeaturedBusinessParams {
@@ -124,6 +127,12 @@ export interface ReviewData {
   pagination: Pagination;
 }
 
+export interface ReviewPayload {
+  business_id: string;
+  rating: number;
+  comment?: string;
+}
+
 // ── Category ────────────────────────────────────────────
 export interface Category {
   id: string;
@@ -131,6 +140,33 @@ export interface Category {
   description: string;
   is_active: boolean;
   created_at: string;
+}
+
+// ── Offer ───────────────────────────────────────────────
+export interface Offer {
+  id: string;
+  business_id: string;
+  service_id: string | null;
+  service_name: string | null;
+  title: string;
+  discount_type: "percentage" | "flat";
+  discount: string;
+  start_date: string;
+  end_date: string;
+  is_active: boolean;
+  created_at: string;
+  total_count: string;
+}
+
+export interface OfferParams {
+  limit?: number;
+  page?: number;
+  active_only?: boolean;
+}
+
+export interface OffersData {
+  offers: Offer[];
+  pagination: Pagination;
 }
 
 // ── City ────────────────────────────────────────────────
