@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import Head from "next/head";
 import Link from "next/link";
 import { useRouter } from "next/router";
 import { Layout } from "@/components/Layout";
@@ -70,6 +71,10 @@ export default function SignUpPage() {
 
   return (
     <Layout>
+      <Head>
+        <title>Sign Up | sundayhundred</title>
+        <meta name="robots" content="noindex,follow" />
+      </Head>
       <div className="container py-10 md:py-16 max-w-md mx-auto">
         <Card className="rounded-2xl shadow-elevated">
           <CardHeader>

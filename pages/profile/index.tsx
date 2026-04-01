@@ -1,6 +1,7 @@
 import { User, MapPin, Star, ChevronRight, LogOut } from "lucide-react";
 import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
+import Head from "next/head";
 import { useRouter } from "next/router";
 import { Layout } from "@/components/Layout";
 import { Button } from "@/components/ui/button";
@@ -33,6 +34,10 @@ export default function Profile() {
 
   return (
     <Layout>
+      <Head>
+        <title>My Profile | sundayhundred</title>
+        <meta name="robots" content="noindex,follow" />
+      </Head>
       <div className="container py-6 md:py-10 max-w-2xl mx-auto">
         <motion.div
           initial={{ opacity: 0, y: 20 }}

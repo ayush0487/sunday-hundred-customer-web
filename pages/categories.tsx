@@ -11,6 +11,8 @@ import { useGeolocation } from "@/hooks/useGeolocation";
 import serverApi from "@/api/server";
 import type { FeaturedBusinessData, FeaturedBusinessParams, Category } from "@/types/api.types";
 
+const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL || "https://app.sundayhundred.com").replace(/\/$/, "");
+
 const iconMap: Record<string, any> = {
   salon: Scissors,
   spa: Sparkles,
@@ -108,12 +110,48 @@ export default function CategoryPage({ ssrBusinesses, ssrCategories }: PageProps
   const pageTitle = activeCategory === "All"
     ? "Explore All Businesses & Services — Sunday Hundred"
     : `Best ${activeCategory} Services Near You — Sunday Hundred`;
+  const canonicalUrl =
+    activeCategory === "All"
+      ? `${SITE_URL}/categories`
+      : `${SITE_URL}/categories?category=${encodeURIComponent(activeCategory)}`;
+  const metaDescription = `Browse top-rated ${activeCategory === "All" ? "local" : activeCategory} businesses near you on sundayhundred. Compare ratings, offers and service prices before booking.`;
+  const listingJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "CollectionPage",
+    name: pageTitle,
+    url: canonicalUrl,
+    description: metaDescription,
+    mainEntity: {
+      "@type": "ItemList",
+      itemListElement: businesses.slice(0, 10).map((business, index) => ({
+        "@type": "ListItem",
+        position: index + 1,
+        url: `${SITE_URL}/business/${business.id}`,
+        name: business.name,
+      })),
+    },
+  };
 
   return (
     <>
       <Head>
         <title>{pageTitle}</title>
-        <meta name="description" content={`Browse top-rated ${activeCategory === "All" ? "" : activeCategory + " "}businesses. Book salons, spas, gyms and more near you.`} />
+        <meta name="description" content={metaDescription} />
+        <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1" />
+        <link rel="canonical" href={canonicalUrl} />
+
+        <meta property="og:type" content="website" />
+        <meta property="og:title" content={pageTitle} />
+        <meta property="og:description" content={metaDescription} />
+        <meta property="og:url" content={canonicalUrl} />
+        <meta property="og:image" content={`${SITE_URL}/sundayhundred.jpeg`} />
+
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content={pageTitle} />
+        <meta name="twitter:description" content={metaDescription} />
+        <meta name="twitter:image" content={`${SITE_URL}/sundayhundred.jpeg`} />
+
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(listingJsonLd) }} />
       </Head>
       <Layout>
         <div className="container py-6 md:py-10">

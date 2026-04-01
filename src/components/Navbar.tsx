@@ -1,5 +1,6 @@
 import { MapPin, User } from "lucide-react";
 import Link from "next/link";
+import Image from "next/image";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
 import { ThemeToggle } from "./ThemeToggle";
@@ -156,12 +157,15 @@ export function Navbar() {
         <div className="flex items-center gap-4">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg gradient-gold flex items-center justify-center">
-              <span className="font-display font-bold text-primary-foreground text-sm">SH</span>
-            </div>
-            <span className="font-display text-xl font-bold hidden sm:block">
-              Sunday<span className="text-gold">Hundred</span>
-            </span>
+            <Image
+              src="/sundayhundred.jpeg"
+              alt="sundayhundred logo"
+              width={36}
+              height={36}
+              className="h-9 w-9 rounded-lg object-cover"
+              priority
+            />
+            <span className="font-display text-xl font-bold hidden sm:block">sundayhundred</span>
           </Link>
 
           {/* Location */}

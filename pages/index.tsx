@@ -11,6 +11,8 @@ import { useGeolocation } from "@/hooks/useGeolocation";
 import serverApi from "@/api/server";
 import type { FeaturedBusinessData, Category } from "@/types/api.types";
 
+const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL || "https://app.sundayhundred.com").replace(/\/$/, "");
+
 interface HomeProps {
   featuredData: FeaturedBusinessData | null;
   categories: Category[] | null;
@@ -42,12 +44,50 @@ export default function Homepage({ featuredData, categories }: HomeProps) {
     featuredData ?? undefined
   );
   const { data: cats } = useCategories(categories ?? undefined);
+  const canonicalUrl = `${SITE_URL}/`;
+  const description =
+    "Find top-rated local businesses near you on sundayhundred. Compare ratings, services, offers, and book instantly via WhatsApp.";
+  const websiteJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    name: "sundayhundred",
+    url: canonicalUrl,
+    potentialAction: {
+      "@type": "SearchAction",
+      target: `${SITE_URL}/categories?category={search_term_string}`,
+      "query-input": "required name=search_term_string",
+    },
+  };
+  const organizationJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    name: "sundayhundred",
+    url: SITE_URL,
+    logo: `${SITE_URL}/sundayhundred.jpeg`,
+  };
 
   return (
     <>
       <Head>
-        <title>Sunday Hundred — Find & Book Top Local Services</title>
-        <meta name="description" content="Discover and book the best salons, spas, gyms, and local services near you. Top-rated businesses with instant WhatsApp booking." />
+        <title>sundayhundred - Find Top Local Services Near You</title>
+        <meta name="description" content={description} />
+        <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1" />
+        <link rel="canonical" href={canonicalUrl} />
+
+        <meta property="og:type" content="website" />
+        <meta property="og:title" content="sundayhundred - Find Top Local Services Near You" />
+        <meta property="og:description" content={description} />
+        <meta property="og:url" content={canonicalUrl} />
+        <meta property="og:site_name" content="sundayhundred" />
+        <meta property="og:image" content={`${SITE_URL}/sundayhundred.jpeg`} />
+
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content="sundayhundred - Find Top Local Services Near You" />
+        <meta name="twitter:description" content={description} />
+        <meta name="twitter:image" content={`${SITE_URL}/sundayhundred.jpeg`} />
+
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteJsonLd) }} />
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd) }} />
       </Head>
       <Layout>
         <Hero />

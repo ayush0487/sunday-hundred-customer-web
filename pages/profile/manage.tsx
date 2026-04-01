@@ -1,4 +1,5 @@
 import { ChangeEvent, useEffect, useState } from "react";
+import Head from "next/head";
 import Link from "next/link";
 import { useRouter } from "next/router";
 import { motion } from "framer-motion";
@@ -69,6 +70,10 @@ export default function ManageProfile() {
 
   return (
     <Layout>
+      <Head>
+        <title>Manage Profile | sundayhundred</title>
+        <meta name="robots" content="noindex,follow" />
+      </Head>
       <div className="container py-6 md:py-10 max-w-3xl mx-auto">
         <Link href="/profile" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-4">
           <ArrowLeft className="h-4 w-4" />

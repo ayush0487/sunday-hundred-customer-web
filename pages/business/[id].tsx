@@ -16,6 +16,8 @@ import serverApi from "@/api/server";
 import type { GetServerSidePropsContext } from "next";
 import type { Business, ReviewData, OffersData } from "@/types/api.types";
 
+const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL || "https://app.sundayhundred.com").replace(/\/$/, "");
+
 const placeholderImages = [
   "https://images.unsplash.com/photo-1560066984-138dadb4c035?w=800&h=500&fit=crop",
   "https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?w=800&h=500&fit=crop",
@@ -121,7 +123,10 @@ export default function BusinessDetail({ ssrBusiness, ssrReviews, ssrOffers }: P
   if (!biz) {
     return (
       <Layout>
-        <Head><title>Business Not Found — Sunday Hundred</title></Head>
+        <Head>
+          <title>Business Not Found - sundayhundred</title>
+          <meta name="robots" content="noindex,follow" />
+        </Head>
         <div className="container py-20 text-center">
           <h1 className="font-display text-2xl font-bold mb-2">Business not found</h1>
           <Link href="/categories" className="text-gold hover:underline">Browse businesses</Link>
@@ -132,12 +137,59 @@ export default function BusinessDetail({ ssrBusiness, ssrReviews, ssrOffers }: P
 
   const minPrice = services.length > 0 ? Math.min(...services.map((s) => s.price)) : null;
   const galleryImages = biz?.image_url ? [biz.image_url] : placeholderImages;
+  const canonicalUrl = `${SITE_URL}/business/${biz.id}`;
+  const metaDescription = `${biz.description || `Book ${biz.category_name} services at ${biz.name}.`} Rated ${biz.rating}/5 with ${biz.total_reviews} reviews.`;
+  const localBusinessJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "LocalBusiness",
+    name: biz.name,
+    description: biz.description || undefined,
+    image: biz.image_url || `${SITE_URL}/sundayhundred.jpeg`,
+    telephone: biz.contact || biz.whatsapp_no || undefined,
+    url: canonicalUrl,
+    aggregateRating:
+      biz.total_reviews > 0
+        ? {
+            "@type": "AggregateRating",
+            ratingValue: biz.rating,
+            reviewCount: biz.total_reviews,
+          }
+        : undefined,
+    makesOffer:
+      services.length > 0
+        ? services.map((service) => ({
+            "@type": "Offer",
+            itemOffered: {
+              "@type": "Service",
+              name: service.name,
+              description: service.description || undefined,
+            },
+            price: service.price,
+            priceCurrency: "INR",
+          }))
+        : undefined,
+  };
 
   return (
     <>
       <Head>
-        <title>{biz.name} — Book Services | Sunday Hundred</title>
-        <meta name="description" content={`${biz.description || `Book ${biz.category_name} services at ${biz.name}.`} Rated ${biz.rating}/5 with ${biz.total_reviews} reviews.`} />
+        <title>{`${biz.name} - ${biz.category_name || "Local Services"} | sundayhundred`}</title>
+        <meta name="description" content={metaDescription} />
+        <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1" />
+        <link rel="canonical" href={canonicalUrl} />
+
+        <meta property="og:type" content="business.business" />
+        <meta property="og:title" content={`${biz.name} - Book Services on sundayhundred`} />
+        <meta property="og:description" content={metaDescription} />
+        <meta property="og:url" content={canonicalUrl} />
+        <meta property="og:image" content={biz.image_url || `${SITE_URL}/sundayhundred.jpeg`} />
+
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content={`${biz.name} - Book Services on sundayhundred`} />
+        <meta name="twitter:description" content={metaDescription} />
+        <meta name="twitter:image" content={biz.image_url || `${SITE_URL}/sundayhundred.jpeg`} />
+
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(localBusinessJsonLd) }} />
       </Head>
       <Layout>
         {/* Gallery */}
