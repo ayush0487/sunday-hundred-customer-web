@@ -85,6 +85,7 @@ export interface FeaturedBusinessParams {
   limit?: number;
   lat?: number;
   long?: number;
+  city?: string;
   category_id?: string | number;
   sort?: "top_rated" | "nearby" | "popular";
   min_rating?: number;

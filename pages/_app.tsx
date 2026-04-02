@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { AppProps } from 'next/app';
 import { ThemeProvider } from 'next-themes';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { CityProvider } from '@/context/CityContext';
 
 import '../styles/globals.css';
 
@@ -21,7 +22,9 @@ function MyApp({ Component, pageProps }: AppProps) {
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
-        <Component {...pageProps} />
+        <CityProvider>
+          <Component {...pageProps} />
+        </CityProvider>
       </ThemeProvider>
     </QueryClientProvider>
   );
