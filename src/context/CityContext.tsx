@@ -16,6 +16,10 @@ interface CityContextValue {
   loading: boolean;
   /** True when user must select a city first */
   needsCitySelection: boolean;
+  /** Unsupported city selected by user (for notice popup) */
+  unsupportedAttemptedCity: City | null;
+  /** Close unsupported city notice popup */
+  dismissUnsupportedCityNotice: () => void;
 }
 
 const CityContext = createContext<CityContextValue>({
@@ -24,10 +28,18 @@ const CityContext = createContext<CityContextValue>({
   setCity: () => {},
   loading: true,
   needsCitySelection: false,
+  unsupportedAttemptedCity: null,
+  dismissUnsupportedCityNotice: () => {},
 });
 
 export function useCity() {
   return useContext(CityContext);
+}
+
+function isSupportedCity(city: City): boolean {
+  const name = city.name.toLowerCase();
+  const slug = city.slug.toLowerCase();
+  return name === "chandigarh" || slug === "chandigarh";
 }
 
 async function detectCitySlugFromLocation(lat: number, long: number, cities: City[]): Promise<string | null> {
@@ -77,21 +89,28 @@ export function CityProvider({ children }: { children: ReactNode }) {
   const [hasInitialized, setHasInitialized] = useState(false);
   const [needsCitySelection, setNeedsCitySelection] = useState(false);
   const [shouldAutoDetect, setShouldAutoDetect] = useState(false);
+  const [unsupportedAttemptedCity, setUnsupportedAttemptedCity] = useState<City | null>(null);
 
   // Initialize from localStorage. If none is found, auto-detect first.
   useEffect(() => {
     if (typeof window === "undefined" || hasInitialized || cities.length === 0) return;
 
     const savedSlug = window.localStorage.getItem(CITY_STORAGE_KEY);
-    const hasSavedCity = savedSlug && cities.some((c) => c.slug === savedSlug);
+    const savedCity = savedSlug ? cities.find((c) => c.slug === savedSlug) : null;
+    const hasSupportedSavedCity = Boolean(savedCity && isSupportedCity(savedCity));
 
-    if (hasSavedCity) {
-      setSelectedSlug(savedSlug);
+    if (hasSupportedSavedCity && savedCity) {
+      setSelectedSlug(savedCity.slug);
       setNeedsCitySelection(false);
+      setUnsupportedAttemptedCity(null);
     } else {
+      if (typeof window !== "undefined") {
+        window.localStorage.removeItem(CITY_STORAGE_KEY);
+      }
       setSelectedSlug("");
       setNeedsCitySelection(false);
       setShouldAutoDetect(true);
+      setUnsupportedAttemptedCity(null);
     }
     setHasInitialized(true);
   }, [cities, hasInitialized]);
@@ -105,14 +124,18 @@ export function CityProvider({ children }: { children: ReactNode }) {
     void detectCitySlugFromLocation(location.lat, location.long, cities).then((detectedSlug) => {
       if (cancelled) return;
 
-      if (detectedSlug) {
-        setSelectedSlug(detectedSlug);
+      const detectedCity = detectedSlug ? cities.find((city) => city.slug === detectedSlug) : null;
+
+      if (detectedCity && isSupportedCity(detectedCity)) {
+        setSelectedSlug(detectedCity.slug);
         if (typeof window !== "undefined") {
-          window.localStorage.setItem(CITY_STORAGE_KEY, detectedSlug);
+          window.localStorage.setItem(CITY_STORAGE_KEY, detectedCity.slug);
         }
         setNeedsCitySelection(false);
+        setUnsupportedAttemptedCity(null);
       } else {
         setNeedsCitySelection(true);
+        setUnsupportedAttemptedCity(null);
       }
 
       setShouldAutoDetect(false);
@@ -130,6 +153,7 @@ export function CityProvider({ children }: { children: ReactNode }) {
     const timer = window.setTimeout(() => {
       setNeedsCitySelection(true);
       setShouldAutoDetect(false);
+      setUnsupportedAttemptedCity(null);
     }, 2500);
 
     return () => {
@@ -139,24 +163,58 @@ export function CityProvider({ children }: { children: ReactNode }) {
 
   const setCity = useCallback(
     (slug: string) => {
-      if (!slug || slug === "null" || !cities.some((city) => city.slug === slug)) {
+      if (!slug || slug === "null") {
         return;
       }
 
-      setSelectedSlug(slug);
+      const matchedCity = cities.find((city) => city.slug === slug);
+      if (!matchedCity) {
+        return;
+      }
+
+      if (!isSupportedCity(matchedCity)) {
+        const fallbackCity = cities.find((city) => isSupportedCity(city));
+        if (fallbackCity) {
+          setSelectedSlug(fallbackCity.slug);
+          if (typeof window !== "undefined") {
+            window.localStorage.setItem(CITY_STORAGE_KEY, fallbackCity.slug);
+          }
+        }
+        setUnsupportedAttemptedCity(matchedCity);
+        setNeedsCitySelection(true);
+        setShouldAutoDetect(false);
+        return;
+      }
+
+      setSelectedSlug(matchedCity.slug);
       setNeedsCitySelection(false);
       setShouldAutoDetect(false);
+      setUnsupportedAttemptedCity(null);
       if (typeof window !== "undefined") {
-        window.localStorage.setItem(CITY_STORAGE_KEY, slug);
+        window.localStorage.setItem(CITY_STORAGE_KEY, matchedCity.slug);
       }
     },
     [cities]
   );
 
   const selectedCity = cities.find((c) => c.slug === selectedSlug) ?? null;
+  const dismissUnsupportedCityNotice = useCallback(() => {
+    setUnsupportedAttemptedCity(null);
+    setNeedsCitySelection(false);
+  }, []);
 
   return (
-    <CityContext.Provider value={{ selectedCity, cities, setCity, loading: isLoading, needsCitySelection }}>
+    <CityContext.Provider
+      value={{
+        selectedCity,
+        cities,
+        setCity,
+        loading: isLoading,
+        needsCitySelection,
+        unsupportedAttemptedCity,
+        dismissUnsupportedCityNotice,
+      }}
+    >
       {children}
     </CityContext.Provider>
   );

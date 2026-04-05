@@ -4,10 +4,29 @@ import { useCity } from "@/context/CityContext";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export function CitySelectionModal() {
-  const { needsCitySelection, cities, setCity, loading } = useCity();
+  const {
+    needsCitySelection,
+    cities,
+    setCity,
+    loading,
+    unsupportedAttemptedCity,
+    dismissUnsupportedCityNotice,
+  } = useCity();
   const [pendingCity, setPendingCity] = useState<string>("");
 
   const canSubmit = useMemo(() => pendingCity.trim().length > 0, [pendingCity]);
+  const selectedCity = useMemo(
+    () => cities.find((city) => city.slug === pendingCity) ?? null,
+    [cities, pendingCity]
+  );
+  const isChandigarhSelected = useMemo(() => {
+    if (!selectedCity) return false;
+    const name = selectedCity.name.toLowerCase();
+    const slug = selectedCity.slug.toLowerCase();
+    return name === "chandigarh" || slug === "chandigarh";
+  }, [selectedCity]);
+  const showOnboardingMessage = Boolean(selectedCity) && !isChandigarhSelected;
+  const isUnsupportedSelectionPopup = Boolean(unsupportedAttemptedCity);
 
   if (!needsCitySelection) return null;
 
@@ -19,32 +38,56 @@ export function CitySelectionModal() {
             <MapPin className="h-4 w-4" />
           </span>
           <div>
-            <h2 className="font-display text-xl font-bold text-foreground">Choose Your City</h2>
-            <p className="mt-1 text-sm text-muted-foreground">Kahan ki services dekhni hain? City select karo.</p>
+            <h2 className="font-display text-xl font-bold text-foreground">
+              {isUnsupportedSelectionPopup ? "City Not Available Yet" : "Choose Your City"}
+            </h2>
+            <p className="mt-1 text-sm text-muted-foreground">
+              {isUnsupportedSelectionPopup
+                ? `We're currently onboarding businesses in ${unsupportedAttemptedCity?.name}. Chandigarh is available for now - stay tuned!`
+                : "Select the city where you want to explore services."}
+            </p>
           </div>
         </div>
 
-        <Select value={pendingCity || undefined} onValueChange={setPendingCity} disabled={loading || cities.length === 0}>
-          <SelectTrigger className="h-11 w-full">
-            <SelectValue placeholder={loading ? "Loading cities..." : "Select city"} />
-          </SelectTrigger>
-          <SelectContent>
-            {cities.map((city) => (
-              <SelectItem key={city.id} value={city.slug}>
-                {city.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        {isUnsupportedSelectionPopup ? (
+          <button
+            type="button"
+            onClick={dismissUnsupportedCityNotice}
+            className="mt-4 inline-flex h-11 w-full items-center justify-center rounded-xl bg-gold px-4 font-medium text-primary-foreground transition hover:opacity-90"
+          >
+            Got it
+          </button>
+        ) : (
+          <>
+            <Select value={pendingCity || undefined} onValueChange={setPendingCity} disabled={loading || cities.length === 0}>
+              <SelectTrigger className="h-11 w-full">
+                <SelectValue placeholder={loading ? "Loading cities..." : "Select city"} />
+              </SelectTrigger>
+              <SelectContent>
+                {cities.map((city) => (
+                  <SelectItem key={city.id} value={city.slug}>
+                    {city.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
 
-        <button
-          type="button"
-          onClick={() => setCity(pendingCity)}
-          disabled={!canSubmit}
-          className="mt-4 inline-flex h-11 w-full items-center justify-center rounded-xl bg-gold px-4 font-medium text-primary-foreground transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          Continue
-        </button>
+            {showOnboardingMessage ? (
+              <p className="mt-3 text-sm text-muted-foreground">
+                We're currently onboarding businesses in this city. Chandigarh is available for now - stay tuned!
+              </p>
+            ) : null}
+
+            <button
+              type="button"
+              onClick={() => setCity(pendingCity)}
+              disabled={!canSubmit}
+              className="mt-4 inline-flex h-11 w-full items-center justify-center rounded-xl bg-gold px-4 font-medium text-primary-foreground transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              Continue
+            </button>
+          </>
+        )}
       </div>
     </div>
   );

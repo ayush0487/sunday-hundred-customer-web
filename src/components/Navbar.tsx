@@ -41,10 +41,10 @@ export function Navbar() {
 
   return (
     <header className="sticky top-0 z-50 glass border-b border-border">
-      <div className="container flex items-center justify-between h-16">
-        <div className="flex items-center gap-4">
+      <div className="container flex items-center justify-between h-16 gap-2">
+        <div className="flex items-center gap-2 md:gap-4 min-w-0">
           {/* Logo */}
-          <Link href="/" className="flex items-center gap-2">
+          <Link href="/" className="flex items-center gap-2 shrink-0">
             <Image
               src="/sundayhundred.jpeg"
               alt="sundayhundred logo"
@@ -57,14 +57,14 @@ export function Navbar() {
           </Link>
 
           {/* Location */}
-          <div className="flex items-center gap-1.5 text-xs md:text-sm">
+          <div className="flex items-center gap-1 text-xs md:text-sm min-w-0">
             <MapPin className="h-4 w-4 text-gold" />
             <Select
               value={selectedCity?.slug || undefined}
               onValueChange={setCity}
               disabled={cityLoading || cities.length === 0}
             >
-              <SelectTrigger className="h-8 min-w-[130px] border-0 bg-transparent px-1 text-xs md:text-sm text-muted-foreground hover:text-foreground focus:ring-0 focus:ring-offset-0">
+              <SelectTrigger className="h-8 min-w-[95px] sm:min-w-[110px] md:min-w-[130px] border-0 bg-transparent px-1 text-xs md:text-sm text-muted-foreground hover:text-foreground focus:ring-0 focus:ring-offset-0">
                 <SelectValue placeholder={cityLoading ? "Loading..." : "Select city"} />
               </SelectTrigger>
               <SelectContent>
@@ -79,7 +79,7 @@ export function Navbar() {
         </div>
 
         {/* Actions */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5 shrink-0">
           <ThemeToggle />
           {isLoggedIn ? (
             <Link href="/profile" className="p-2 rounded-full bg-secondary hover:bg-accent transition-colors">
@@ -87,10 +87,10 @@ export function Navbar() {
             </Link>
           ) : (
             <>
-              <Button asChild variant="outline" size="sm">
+              <Button asChild variant="outline" size="sm" className="px-2.5 sm:px-3">
                 <Link href="/login">Login</Link>
               </Button>
-              <Button asChild size="sm">
+              <Button asChild size="sm" className="px-3 sm:px-4">
                 <Link href="/signup">Sign up</Link>
               </Button>
             </>
