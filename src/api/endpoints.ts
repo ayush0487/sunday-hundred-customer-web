@@ -1,6 +1,7 @@
 
 export const ENDPOINTS = {
   // Auth
+  SIGNUP_REQUEST_OTP: "/users/signup/request-otp",
   SIGNUP: "/users/signup",
   LOGIN: "/users/login",
 

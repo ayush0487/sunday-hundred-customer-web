@@ -10,14 +10,14 @@ const heroSlides = [
     title: "Premium Beauty Services",
     subtitle: "Get 50% OFF on your first salon booking",
     image: "https://images.unsplash.com/photo-1560066984-138dadb4c035?w=1200&h=600&fit=crop",
-    cta: "Book Now",
+    cta: "Explore",
   },
   {
     id: 2,
     title: "Fitness & Wellness",
     subtitle: "Join thousands achieving their fitness goals",
     image: "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=1200&h=600&fit=crop",
-    cta: "Get Started",
+    cta: "Explore",
   },
   {
     id: 3,
@@ -31,7 +31,7 @@ const heroSlides = [
     title: "Beauty & Skincare",
     subtitle: "Transform your skin with expert professionals",
     image: "https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?w=1200&h=600&fit=crop",
-    cta: "Learn More",
+    cta: "Explore",
   },
 ];
 

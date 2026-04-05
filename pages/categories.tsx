@@ -1,28 +1,19 @@
 import { useEffect, useMemo, useState } from "react";
 import Head from "next/head";
-import { Scissors, Dumbbell, Sparkles, Heart, Wrench, Paintbrush, Camera, Car, Star, MapPin, TrendingUp, SlidersHorizontal } from "lucide-react";
+import { Star, MapPin, TrendingUp, SlidersHorizontal } from "lucide-react";
 import { motion } from "framer-motion";
 import { useRouter } from "next/router";
 import { Layout } from "@/components/Layout";
 import { BusinessCard } from "@/components/BusinessCard";
+import { CategorySelector } from "@/components/CategorySelector";
+import { CategoryBreadcrumb } from "@/components/CategoryBreadcrumb";
 import { useFeaturedBusinesses } from "@/hooks/useBusiness";
 import { useCategories } from "@/hooks/useCategories";
 import { useGeolocation } from "@/hooks/useGeolocation";
 import serverApi from "@/api/server";
-import type { FeaturedBusinessData, FeaturedBusinessParams, Category } from "@/types/api.types";
+import type { FeaturedBusinessData, FeaturedBusinessParams, Category, SubCategory } from "@/types/api.types";
 
 const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL || "https://app.sundayhundred.com").replace(/\/$/, "");
-
-const iconMap: Record<string, any> = {
-  salon: Scissors,
-  spa: Sparkles,
-  gym: Dumbbell,
-  beauty: Heart,
-  repairs: Wrench,
-  painters: Paintbrush,
-  photography: Camera,
-  "car care": Car,
-};
 
 const filterButtons = [
   { label: "Top Rated", value: "top_rated" as const, icon: Star },
@@ -55,66 +46,88 @@ export async function getServerSideProps() {
 
 export default function CategoryPage({ ssrBusinesses, ssrCategories }: PageProps) {
   const router = useRouter();
-  const { category: queryCategory } = router.query;
   const { location } = useGeolocation();
 
-  const [activeCategory, setActiveCategory] = useState<string>("All");
+  const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
+  const [selectedSubcategory, setSelectedSubcategory] = useState<SubCategory | null>(null);
+  const [showCategorySelector, setShowCategorySelector] = useState(true);
   const [activeFilter, setActiveFilter] = useState<FeaturedBusinessParams["sort"] | null>(null);
   const [maxDistance, setMaxDistance] = useState<number | null>(null);
   const [minRating, setMinRating] = useState<number | null>(null);
 
-  const { data: apiCategories } = useCategories(ssrCategories ?? undefined);
+  const { categories, isLoading: categoriesLoading } = useCategories(ssrCategories ?? undefined);
 
+  // Load selection from query params if available
   useEffect(() => {
-    if (!queryCategory) {
-      setActiveCategory("All");
-      return;
+    const { cat_id, subcat_id } = router.query;
+    if (cat_id && categories.length > 0) {
+      const category = categories.find((c) => c.id === cat_id);
+      if (category) {
+        setSelectedCategory(category);
+        if (subcat_id && category.sub_categories) {
+          const subcategory = category.sub_categories.find((sc) => sc.id === subcat_id);
+          if (subcategory) {
+            setSelectedSubcategory(subcategory);
+            setShowCategorySelector(false);
+            return;
+          }
+        }
+      }
     }
-    setActiveCategory(queryCategory as string);
-  }, [queryCategory]);
 
-  const selectedCategoryId = useMemo(() => {
-    if (activeCategory === "All" || !apiCategories) return undefined;
-    const found = apiCategories.find((c) => c.name.toLowerCase() === activeCategory.toLowerCase());
-    return found?.id;
-  }, [activeCategory, apiCategories]);
+    setShowCategorySelector(true);
+  }, [router.query, categories]);
+
+  const handleCategorySelect = (category: Category, subcategory: SubCategory) => {
+    setSelectedCategory(category);
+    setSelectedSubcategory(subcategory);
+    setShowCategorySelector(false);
+    
+    // Update URL
+    router.push(
+      {
+        pathname: "/categories",
+        query: { cat_id: category.id, subcat_id: subcategory.id },
+      },
+      undefined,
+      { shallow: true }
+    );
+  };
+
+  const handleClearSelection = () => {
+    setSelectedCategory(null);
+    setSelectedSubcategory(null);
+    router.push("/categories", undefined, { shallow: true });
+  };
 
   const params: FeaturedBusinessParams = {
     page: 1,
     limit: 20,
     ...(location && { lat: location.lat, long: location.long }),
-    ...(selectedCategoryId && { category_id: selectedCategoryId }),
+    ...(selectedCategory && { category_id: selectedCategory.id }),
     ...(activeFilter && { sort: activeFilter }),
     ...(maxDistance && { max_distance: maxDistance }),
     ...(minRating && { min_rating: minRating }),
   };
 
-  // Use SSR data as initialData only when no filters applied (default state)
-  const isDefaultState = activeCategory === "All" && !activeFilter && !maxDistance && !minRating;
+  const isDefaultState = !selectedCategory && !activeFilter && !maxDistance && !minRating;
   const { data, isLoading } = useFeaturedBusinesses(
     params,
     isDefaultState ? (ssrBusinesses ?? undefined) : undefined
   );
   const businesses = data?.businesses ?? [];
 
-  const allCategories = useMemo(() => {
-    const cats = [{ name: "All", icon: Star }];
-    if (apiCategories) {
-      apiCategories.forEach((c) => {
-        cats.push({ name: c.name, icon: iconMap[c.name.toLowerCase()] || Sparkles });
-      });
-    }
-    return cats;
-  }, [apiCategories]);
-
-  const pageTitle = activeCategory === "All"
-    ? "Explore All Businesses & Services — Sunday Hundred"
-    : `Best ${activeCategory} Services Near You — Sunday Hundred`;
+  const pageTitle = selectedSubcategory
+    ? `${selectedSubcategory.sub_cat} Services Near You — Sunday Hundred`
+    : "Browse Services — Sunday Hundred";
   const canonicalUrl =
-    activeCategory === "All"
-      ? `${SITE_URL}/categories`
-      : `${SITE_URL}/categories?category=${encodeURIComponent(activeCategory)}`;
-  const metaDescription = `Browse top-rated ${activeCategory === "All" ? "local" : activeCategory} businesses near you on sundayhundred. Compare ratings, offers and service prices before booking.`;
+    selectedSubcategory
+      ? `${SITE_URL}/categories?cat_id=${selectedCategory?.id}&subcat_id=${selectedSubcategory.id}`
+      : `${SITE_URL}/categories`;
+  const metaDescription = selectedSubcategory
+    ? `Find top-rated ${selectedSubcategory.sub_cat} businesses near you on Sunday Hundred. Compare ratings and book your service today.`
+    : "Browse and compare top-rated local businesses on Sunday Hundred. Find salons, gyms, services and more near you.";
+
   const listingJsonLd = {
     "@context": "https://schema.org",
     "@type": "CollectionPage",
@@ -155,25 +168,40 @@ export default function CategoryPage({ ssrBusinesses, ssrCategories }: PageProps
       </Head>
       <Layout>
         <div className="container py-6 md:py-10">
-          <h1 className="font-display text-2xl md:text-3xl font-bold mb-6">Explore Categories</h1>
-
-          {/* Category pills */}
-          <div className="flex gap-2 overflow-x-auto pb-4 scrollbar-none mb-6">
-            {allCategories.map((cat) => (
-              <button
-                key={cat.name}
-                onClick={() => setActiveCategory(cat.name)}
-                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium whitespace-nowrap transition-all shrink-0 ${
-                  activeCategory === cat.name
-                    ? "gradient-gold text-primary-foreground"
-                    : "bg-card shadow-card text-card-foreground hover:bg-accent"
-                }`}
-              >
-                <cat.icon className="h-4 w-4" />
-                {cat.name}
-              </button>
-            ))}
+          <div className="mb-8">
+            <h1 className="font-display text-3xl md:text-4xl font-bold mb-2">
+              {selectedSubcategory ? selectedSubcategory.sub_cat : "Find Services"}
+            </h1>
+            <p className="text-gray-500">
+              {selectedSubcategory
+                ? `Explore the best ${selectedSubcategory.sub_cat} providers in your area`
+                : "Select a service category to get started"}
+            </p>
           </div>
+
+          {/* Category Selection Card */}
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-8"
+          >
+            {showCategorySelector || !selectedSubcategory ? (
+              <CategorySelector
+                categories={categories}
+                onCategorySelect={handleCategorySelect}
+                variant="inline"
+                onClose={selectedSubcategory ? () => setShowCategorySelector(false) : undefined}
+              />
+            ) : (
+              <CategoryBreadcrumb
+                selectedCategory={selectedCategory}
+                selectedSubcategory={selectedSubcategory}
+                onCategoryClick={() => setShowCategorySelector(true)}
+                onClear={handleClearSelection}
+                isLoading={categoriesLoading}
+              />
+            )}
+          </motion.div>
 
           <div className="flex flex-col lg:flex-row gap-8">
             {/* Sidebar Filters (desktop) */}
@@ -242,7 +270,7 @@ export default function CategoryPage({ ssrBusinesses, ssrCategories }: PageProps
                             : "text-muted-foreground hover:text-foreground hover:bg-secondary"
                         }`}
                       >
-                        <Star className="h-3.5 w-3.5 fill-gold text-gold" />
+                        <Star className="h-3.5 w-3.5 fill-yellow-400 text-yellow-400" />
                         {r.label}
                       </button>
                     ))}
@@ -298,6 +326,7 @@ export default function CategoryPage({ ssrBusinesses, ssrCategories }: PageProps
                       : "bg-card shadow-card text-card-foreground"
                   }`}
                 >
+                  <Star className="h-3.5 w-3.5 fill-yellow-400 text-yellow-400" />
                   {r.label}
                 </button>
               ))}
@@ -306,10 +335,20 @@ export default function CategoryPage({ ssrBusinesses, ssrCategories }: PageProps
             {/* Results Grid */}
             <div className="flex-1">
               <p className="text-sm text-muted-foreground mb-4">
-                {isLoading ? "Loading..." : `${businesses.length} businesses found`}
+                {isLoading ? "Loading businesses..." : `${businesses.length} businesses found`}
               </p>
 
-              {isLoading ? (
+              {!selectedCategory ? (
+                <div className="rounded-2xl bg-card border-2 border-dashed border-border p-8 text-center">
+                  <p className="text-gray-600 mb-4">Select a service category to see available businesses</p>
+                  <button
+                    onClick={() => setShowCategorySelector(true)}
+                    className="inline-flex items-center gap-2 gradient-gold text-primary-foreground font-medium px-6 py-3 rounded-lg transition hover:opacity-90"
+                  >
+                    Browse Categories
+                  </button>
+                </div>
+              ) : isLoading ? (
                 <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5">
                   {Array.from({ length: 6 }).map((_, i) => (
                     <div key={i} className="rounded-2xl bg-card shadow-card animate-pulse">
@@ -320,6 +359,11 @@ export default function CategoryPage({ ssrBusinesses, ssrCategories }: PageProps
                       </div>
                     </div>
                   ))}
+                </div>
+              ) : businesses.length === 0 ? (
+                <div className="rounded-2xl bg-gray-50 border border-gray-200 p-12 text-center">
+                  <p className="text-gray-600">No businesses found for your selection</p>
+                  <p className="text-sm text-gray-500 mt-2">Try changing your filters or category</p>
                 </div>
               ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5">

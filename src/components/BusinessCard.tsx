@@ -1,6 +1,5 @@
 import { MapPin } from "lucide-react";
 import Link from "next/link";
-import { StarRating } from "./StarRating";
 
 const FALLBACK_BUSINESS_IMAGE = "https://images.unsplash.com/photo-1562322140-8baeececf3df?w=600&h=450&fit=crop";
 
@@ -39,7 +38,9 @@ export function BusinessCard({
   showOffer = true,
   showTags = true,
 }: BusinessCardProps) {
-  const reviewCount = total_reviews ?? reviews ?? 0;
+  void rating;
+  void total_reviews;
+  void reviews;
   const distanceText = distance ?? (distance_km != null ? `${distance_km} km` : "");
   const categoryText = category_name ?? category ?? "";
   const businessImage = image_url || image || FALLBACK_BUSINESS_IMAGE;
@@ -74,10 +75,7 @@ export function BusinessCard({
         )}
       </div>
       <div className="p-4">
-        <div className="flex items-start justify-between gap-2 mb-2">
-          <h3 className="font-display font-semibold text-card-foreground line-clamp-1">{name}</h3>
-          <StarRating rating={rating} count={reviewCount} />
-        </div>
+        <h3 className="font-display font-semibold text-card-foreground line-clamp-1 mb-2">{name}</h3>
         {categoryText && <p className="text-xs text-muted-foreground mb-3">{categoryText}</p>}
         {showTags && tags && tags.length > 0 && (
           <div className="flex flex-wrap gap-1.5">

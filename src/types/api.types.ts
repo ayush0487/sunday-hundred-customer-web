@@ -46,6 +46,15 @@ export interface SignupPayload {
   password: string;
 }
 
+export interface SignupRequestOtpData {
+  email: string;
+  expires_in_minutes: number;
+}
+
+export interface SignupVerifyPayload extends SignupPayload {
+  otp: string;
+}
+
 export interface LoginPayload {
   email: string;
   password: string;
@@ -135,12 +144,26 @@ export interface ReviewPayload {
 }
 
 // ── Category ────────────────────────────────────────────
+export interface SubCategory {
+  id: string;
+  sub_cat: string;
+  sub_cat_slug: string;
+  sub_cat_img_url: string;
+  sub_cat_is_active: boolean;
+}
+
 export interface Category {
   id: string;
-  name: string;
-  description: string;
-  is_active: boolean;
-  created_at: string;
+  type_cat: string;
+  type_cat_slug: string;
+  type_cat_img_url: string;
+  type_cat_is_active: boolean;
+  sub_categories?: SubCategory[];
+  // Legacy fields for backwards compatibility
+  name?: string;
+  description?: string;
+  is_active?: boolean;
+  created_at?: string;
 }
 
 // ── Offer ───────────────────────────────────────────────

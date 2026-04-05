@@ -24,7 +24,7 @@ const fadeUp = {
 };
 
 export function Categories({ ssrCategories }: { ssrCategories?: Category[] }) {
-  const { data: categories, isLoading } = useCategories(ssrCategories);
+  const { categories, isLoading } = useCategories(ssrCategories);
 
   return (
     <section className="container py-8">
@@ -46,9 +46,10 @@ export function Categories({ ssrCategories }: { ssrCategories?: Category[] }) {
           {categories?.map((cat, i) => (
             <motion.div key={cat.id} custom={i} initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeUp}>
               <CategoryCard
-                name={cat.name}
-                icon={iconMap[cat.name.toLowerCase()] || fallbackIcon}
-                href={`/categories?category=${encodeURIComponent(cat.name)}`}
+                name={cat.type_cat || cat.name || "Category"}
+                icon={iconMap[(cat.type_cat || cat.name || "").toLowerCase()] || fallbackIcon}
+                image={cat.type_cat_img_url || undefined}
+                href={`/categories?category=${encodeURIComponent(cat.type_cat || cat.name || "")}`}
               />
             </motion.div>
           ))}

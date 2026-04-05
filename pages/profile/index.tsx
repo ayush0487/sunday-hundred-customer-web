@@ -1,4 +1,4 @@
-import { User, MapPin, Star, ChevronRight, LogOut } from "lucide-react";
+import { User, MapPin, ChevronRight, LogOut } from "lucide-react";
 import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
 import Head from "next/head";
@@ -11,7 +11,6 @@ import { getAuthToken, getCurrentUser, getCurrentUserEmail, logout } from "@/lib
 const menuItems = [
   { label: "My Profile", icon: User },
   { label: "Saved Addresses", icon: MapPin },
-  { label: "My Reviews", icon: Star },
 ];
 
 export default function Profile() {
@@ -88,11 +87,6 @@ export default function Profile() {
               onClick={() => {
                 if (item.label === "My Profile") {
                   router.push("/profile/manage");
-                  return;
-                }
-
-                if (item.label === "My Reviews") {
-                  router.push("/profile/reviews");
                 }
               }}
             >

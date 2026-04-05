@@ -1,20 +1,17 @@
 import { useState } from "react";
 import Head from "next/head";
-import { ArrowLeft, ChevronLeft, ChevronRight, Clock, MapPin, MessageCircle, Star, Share2 } from "lucide-react";
+import { ArrowLeft, ChevronLeft, ChevronRight, Clock, MapPin, MessageCircle, Share2 } from "lucide-react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { Layout } from "@/components/Layout";
-import { StarRating } from "@/components/StarRating";
 import { OfferCard } from "@/components/OfferCard";
-import { ReviewForm } from "@/components/ReviewForm";
 import { useRouter } from "next/router";
 import { useBusinessById } from "@/hooks/useBusiness";
-import { useReviews } from "@/hooks/useReviews";
 import { useOffers } from "@/hooks/useOffers";
 import { useGeolocation } from "@/hooks/useGeolocation";
 import serverApi from "@/api/server";
 import type { GetServerSidePropsContext } from "next";
-import type { Business, ReviewData, OffersData } from "@/types/api.types";
+import type { Business, OffersData } from "@/types/api.types";
 
 const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL || "https://app.sundayhundred.com").replace(/\/$/, "");
 
@@ -26,59 +23,39 @@ const placeholderImages = [
 
 interface PageProps {
   ssrBusiness: Business | null;
-  ssrReviews: ReviewData | null;
   ssrOffers: OffersData | null;
-}
-
-function formatReviewDate(value: string): string {
-  const parsed = new Date(value);
-
-  if (Number.isNaN(parsed.getTime())) {
-    return value;
-  }
-
-  const day = String(parsed.getUTCDate()).padStart(2, "0");
-  const month = String(parsed.getUTCMonth() + 1).padStart(2, "0");
-  const year = parsed.getUTCFullYear();
-
-  return `${day}/${month}/${year}`;
 }
 
 export async function getServerSideProps(context: GetServerSidePropsContext) {
   const { id } = context.params as { id: string };
 
   try {
-    const [bizRes, reviewRes, offersRes] = await Promise.all([
+    const [bizRes, offersRes] = await Promise.all([
       serverApi.get(`/business/getBusinessById/${id}`),
-      serverApi.get(`/reviews/${id}`, { params: { page: 1, limit: 10 } }),
       serverApi.get(`/offers/business/${id}`, { params: { limit: 10, page: 1, active_only: true } }),
     ]);
 
     return {
       props: {
         ssrBusiness: bizRes.data.data ?? null,
-        ssrReviews: reviewRes.data.data ?? null,
         ssrOffers: offersRes.data.data ?? null,
       },
     };
   } catch {
-    return { props: { ssrBusiness: null, ssrReviews: null, ssrOffers: null } };
+    return { props: { ssrBusiness: null, ssrOffers: null } };
   }
 }
 
-export default function BusinessDetail({ ssrBusiness, ssrReviews, ssrOffers }: PageProps) {
+export default function BusinessDetail({ ssrBusiness, ssrOffers }: PageProps) {
   const [currentImage, setCurrentImage] = useState(0);
-  const [reviewRefreshKey, setReviewRefreshKey] = useState(0);
   const router = useRouter();
   const { id } = router.query;
   const { location } = useGeolocation();
 
   const locationParams = location ? { lat: location.lat, long: location.long } : undefined;
   const { data: biz, isLoading: bizLoading } = useBusinessById(id as string, locationParams, ssrBusiness ?? undefined);
-  const { data: reviewData, isLoading: reviewsLoading } = useReviews(id as string, { page: 1, limit: 10 }, ssrReviews ?? undefined);
   const { data: offersData, isLoading: offersLoading } = useOffers(id as string, { limit: 10, page: 1, active_only: true }, ssrOffers ?? undefined);
 
-  const reviews = reviewData?.reviews ?? [];
   const services = biz?.services ?? [];
   const offers = offersData?.offers ?? [];
 
@@ -138,7 +115,7 @@ export default function BusinessDetail({ ssrBusiness, ssrReviews, ssrOffers }: P
   const minPrice = services.length > 0 ? Math.min(...services.map((s) => s.price)) : null;
   const galleryImages = biz?.image_url ? [biz.image_url] : placeholderImages;
   const canonicalUrl = `${SITE_URL}/business/${biz.id}`;
-  const metaDescription = `${biz.description || `Book ${biz.category_name} services at ${biz.name}.`} Rated ${biz.rating}/5 with ${biz.total_reviews} reviews.`;
+  const metaDescription = biz.description || `Book ${biz.category_name} services at ${biz.name}.`;
   const localBusinessJsonLd = {
     "@context": "https://schema.org",
     "@type": "LocalBusiness",
@@ -147,14 +124,6 @@ export default function BusinessDetail({ ssrBusiness, ssrReviews, ssrOffers }: P
     image: biz.image_url || `${SITE_URL}/sundayhundred.jpeg`,
     telephone: biz.contact || biz.whatsapp_no || undefined,
     url: canonicalUrl,
-    aggregateRating:
-      biz.total_reviews > 0
-        ? {
-            "@type": "AggregateRating",
-            ratingValue: biz.rating,
-            reviewCount: biz.total_reviews,
-          }
-        : undefined,
     makesOffer:
       services.length > 0
         ? services.map((service) => ({
@@ -243,7 +212,6 @@ export default function BusinessDetail({ ssrBusiness, ssrReviews, ssrOffers }: P
               <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }}>
                 <h1 className="font-display text-2xl md:text-4xl font-bold mb-3">{biz.name}</h1>
                 <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground mb-4">
-                  <StarRating rating={biz.rating} count={biz.total_reviews} />
                   {biz.distance_km != null && (
                     <span className="flex items-center gap-1"><MapPin className="h-4 w-4" /> {biz.distance_km} km</span>
                   )}
@@ -321,67 +289,13 @@ export default function BusinessDetail({ ssrBusiness, ssrReviews, ssrOffers }: P
                 </div>
               )}
 
-              {/* Review Form */}
-              <div className="mb-6">
-                <ReviewForm
-                  businessId={id as string}
-                  onSuccess={() => setReviewRefreshKey((prev) => prev + 1)}
-                />
-              </div>
-
-              {/* Reviews */}
-              <div>
-                <h2 className="font-display text-xl font-bold mb-4">
-                  Reviews {reviewData?.pagination && `(${reviewData.pagination.total})`}
-                </h2>
-                {reviewsLoading && !reviewData ? (
-                  <div className="space-y-4">
-                    {Array.from({ length: 3 }).map((_, i) => (
-                      <div key={i} className="p-4 rounded-xl bg-card shadow-card animate-pulse space-y-3">
-                        <div className="h-4 bg-secondary rounded w-1/4" />
-                        <div className="h-3 bg-secondary rounded w-3/4" />
-                      </div>
-                    ))}
-                  </div>
-                ) : reviews.length > 0 ? (
-                  <div className="space-y-4">
-                    {reviews.map((rev) => (
-                      <div key={rev.id} className="p-4 rounded-xl bg-card shadow-card">
-                        <div className="flex items-center gap-3 mb-3">
-                          <div className="w-10 h-10 rounded-full bg-accent flex items-center justify-center text-sm font-bold text-accent-foreground">
-                            {rev.reviewer_avatar ? (
-                              <img src={rev.reviewer_avatar} alt="" className="w-full h-full rounded-full object-cover" />
-                            ) : (
-                              rev.reviewer_name?.charAt(0)?.toUpperCase()
-                            )}
-                          </div>
-                          <div className="flex-1">
-                            <p className="font-medium text-sm">{rev.reviewer_name}</p>
-                            <p className="text-xs text-muted-foreground">
-                              {formatReviewDate(rev.created_at)}
-                            </p>
-                          </div>
-                          <div className="flex items-center gap-0.5">
-                            {Array.from({ length: rev.rating }).map((_, j) => (
-                              <Star key={j} className="h-3.5 w-3.5 fill-gold text-gold" />
-                            ))}
-                          </div>
-                        </div>
-                        <p className="text-sm text-muted-foreground">{rev.comment}</p>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-muted-foreground text-sm">No reviews yet.</p>
-                )}
-              </div>
+              {/* Review system intentionally hidden */}
             </div>
 
             {/* Sidebar CTA (desktop) */}
             <aside className="hidden lg:block w-80 shrink-0">
               <div className="sticky top-24 rounded-2xl bg-card shadow-elevated p-6">
                 <h3 className="font-display text-lg font-bold mb-2">{biz.name}</h3>
-                <StarRating rating={biz.rating} count={biz.total_reviews} />
                 {minPrice != null && (
                   <div className="mt-4 pt-4 border-t border-border">
                     <p className="text-sm text-muted-foreground mb-1">Starting from</p>

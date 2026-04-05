@@ -1,7 +1,6 @@
 import Head from "next/head";
 import { Layout } from "@/components/Layout";
 import { Hero } from "@/components/home/Hero";
-import { QuickFilters } from "@/components/home/QuickFilters";
 import { Categories } from "@/components/home/Categories";
 import { FeaturedBusinesses } from "@/components/home/FeaturedBusinesses";
 import { OffersBanner } from "@/components/home/OffersBanner";
@@ -43,7 +42,7 @@ export default function Homepage({ featuredData, categories }: HomeProps) {
     { page: 1, limit: 6, ...(location && { lat: location.lat, long: location.long }) },
     featuredData ?? undefined
   );
-  const { data: cats } = useCategories(categories ?? undefined);
+  const { categories: cats } = useCategories(categories ?? undefined);
   const canonicalUrl = `${SITE_URL}/`;
   const description =
     "Find top-rated local businesses near you on sundayhundred. Compare ratings, services, offers, and book instantly via WhatsApp.";
@@ -91,7 +90,6 @@ export default function Homepage({ featuredData, categories }: HomeProps) {
       </Head>
       <Layout>
         <Hero />
-        <QuickFilters />
         <Categories ssrCategories={cats} />
         <FeaturedBusinesses businesses={data?.businesses ?? []} isLoading={isLoading} />
         <OffersBanner />

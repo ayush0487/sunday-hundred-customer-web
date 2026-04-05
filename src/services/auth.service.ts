@@ -1,9 +1,20 @@
 import api from "@/api/axios";
 import { ENDPOINTS } from "@/api/endpoints";
-import type { ApiResponse, AuthData, SignupPayload, LoginPayload } from "@/types/api.types";
+import type {
+  ApiResponse,
+  AuthData,
+  SignupPayload,
+  SignupRequestOtpData,
+  SignupVerifyPayload,
+  LoginPayload,
+} from "@/types/api.types";
 
 export const authService = {
-  signup(payload: SignupPayload) {
+  requestSignupOtp(payload: SignupPayload) {
+    return api.post<ApiResponse<SignupRequestOtpData>>(ENDPOINTS.SIGNUP_REQUEST_OTP, payload);
+  },
+
+  signup(payload: SignupVerifyPayload) {
     return api.post<ApiResponse<AuthData>>(ENDPOINTS.SIGNUP, payload);
   },
 

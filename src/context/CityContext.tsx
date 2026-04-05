@@ -14,6 +14,8 @@ interface CityContextValue {
   setCity: (slug: string) => void;
   /** True while cities are loading */
   loading: boolean;
+  /** True when user must select a city first */
+  needsCitySelection: boolean;
 }
 
 const CityContext = createContext<CityContextValue>({
@@ -21,6 +23,7 @@ const CityContext = createContext<CityContextValue>({
   cities: [],
   setCity: () => {},
   loading: true,
+  needsCitySelection: false,
 });
 
 export function useCity() {
@@ -72,9 +75,10 @@ export function CityProvider({ children }: { children: ReactNode }) {
   const { location } = useGeolocation();
   const [selectedSlug, setSelectedSlug] = useState<string>("");
   const [hasInitialized, setHasInitialized] = useState(false);
+  const [needsCitySelection, setNeedsCitySelection] = useState(false);
   const [shouldAutoDetect, setShouldAutoDetect] = useState(false);
 
-  // Step 1: Initialize from localStorage or default to first city
+  // Initialize from localStorage. If none is found, auto-detect first.
   useEffect(() => {
     if (typeof window === "undefined" || hasInitialized || cities.length === 0) return;
 
@@ -83,27 +87,34 @@ export function CityProvider({ children }: { children: ReactNode }) {
 
     if (hasSavedCity) {
       setSelectedSlug(savedSlug);
-      setHasInitialized(true);
-      setShouldAutoDetect(false);
+      setNeedsCitySelection(false);
     } else {
-      setSelectedSlug(cities[0].slug);
-      window.localStorage.setItem(CITY_STORAGE_KEY, cities[0].slug);
-      setHasInitialized(true);
+      setSelectedSlug("");
+      setNeedsCitySelection(false);
       setShouldAutoDetect(true);
     }
+    setHasInitialized(true);
   }, [cities, hasInitialized]);
 
-  // Step 2: Auto-detect city from geolocation
+  // Try to resolve city via geolocation and reverse geocoding.
   useEffect(() => {
     if (!hasInitialized || !shouldAutoDetect || !location || cities.length === 0) return;
 
     let cancelled = false;
 
     void detectCitySlugFromLocation(location.lat, location.long, cities).then((detectedSlug) => {
-      if (cancelled || !detectedSlug) return;
+      if (cancelled) return;
 
-      setSelectedSlug(detectedSlug);
-      window.localStorage.setItem(CITY_STORAGE_KEY, detectedSlug);
+      if (detectedSlug) {
+        setSelectedSlug(detectedSlug);
+        if (typeof window !== "undefined") {
+          window.localStorage.setItem(CITY_STORAGE_KEY, detectedSlug);
+        }
+        setNeedsCitySelection(false);
+      } else {
+        setNeedsCitySelection(true);
+      }
+
       setShouldAutoDetect(false);
     });
 
@@ -112,9 +123,24 @@ export function CityProvider({ children }: { children: ReactNode }) {
     };
   }, [cities, hasInitialized, location, shouldAutoDetect]);
 
+  // If location is unavailable or denied, ask user after a short wait.
+  useEffect(() => {
+    if (!hasInitialized || !shouldAutoDetect) return;
+
+    const timer = window.setTimeout(() => {
+      setNeedsCitySelection(true);
+      setShouldAutoDetect(false);
+    }, 2500);
+
+    return () => {
+      window.clearTimeout(timer);
+    };
+  }, [hasInitialized, shouldAutoDetect]);
+
   const setCity = useCallback(
     (slug: string) => {
       setSelectedSlug(slug);
+      setNeedsCitySelection(false);
       setShouldAutoDetect(false);
       if (typeof window !== "undefined") {
         window.localStorage.setItem(CITY_STORAGE_KEY, slug);
@@ -126,7 +152,7 @@ export function CityProvider({ children }: { children: ReactNode }) {
   const selectedCity = cities.find((c) => c.slug === selectedSlug) ?? null;
 
   return (
-    <CityContext.Provider value={{ selectedCity, cities, setCity, loading: isLoading }}>
+    <CityContext.Provider value={{ selectedCity, cities, setCity, loading: isLoading, needsCitySelection }}>
       {children}
     </CityContext.Provider>
   );
