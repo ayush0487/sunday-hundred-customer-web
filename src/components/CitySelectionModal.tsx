@@ -24,7 +24,7 @@ export function CitySelectionModal() {
           </div>
         </div>
 
-        <Select value={pendingCity} onValueChange={setPendingCity} disabled={loading || cities.length === 0}>
+        <Select value={pendingCity || undefined} onValueChange={setPendingCity} disabled={loading || cities.length === 0}>
           <SelectTrigger className="h-11 w-full">
             <SelectValue placeholder={loading ? "Loading cities..." : "Select city"} />
           </SelectTrigger>

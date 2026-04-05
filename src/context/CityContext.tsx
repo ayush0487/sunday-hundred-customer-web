@@ -139,6 +139,10 @@ export function CityProvider({ children }: { children: ReactNode }) {
 
   const setCity = useCallback(
     (slug: string) => {
+      if (!slug || slug === "null" || !cities.some((city) => city.slug === slug)) {
+        return;
+      }
+
       setSelectedSlug(slug);
       setNeedsCitySelection(false);
       setShouldAutoDetect(false);
@@ -146,7 +150,7 @@ export function CityProvider({ children }: { children: ReactNode }) {
         window.localStorage.setItem(CITY_STORAGE_KEY, slug);
       }
     },
-    []
+    [cities]
   );
 
   const selectedCity = cities.find((c) => c.slug === selectedSlug) ?? null;

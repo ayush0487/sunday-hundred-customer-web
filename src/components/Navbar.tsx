@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from ".
 export function Navbar() {
   const router = useRouter();
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const { selectedCity, cities, setCity } = useCity();
+  const { selectedCity, cities, setCity, loading: cityLoading } = useCity();
 
   useEffect(() => {
     const refresh = () => {
@@ -59,9 +59,13 @@ export function Navbar() {
           {/* Location */}
           <div className="flex items-center gap-1.5 text-xs md:text-sm">
             <MapPin className="h-4 w-4 text-gold" />
-            <Select value={selectedCity?.slug ?? ""} onValueChange={setCity}>
+            <Select
+              value={selectedCity?.slug || undefined}
+              onValueChange={setCity}
+              disabled={cityLoading || cities.length === 0}
+            >
               <SelectTrigger className="h-8 min-w-[130px] border-0 bg-transparent px-1 text-xs md:text-sm text-muted-foreground hover:text-foreground focus:ring-0 focus:ring-offset-0">
-                <SelectValue placeholder="Select city" />
+                <SelectValue placeholder={cityLoading ? "Loading..." : "Select city"} />
               </SelectTrigger>
               <SelectContent>
                 {cities.map((city) => (
