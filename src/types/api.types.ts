@@ -185,7 +185,12 @@ export interface Offer {
   end_date: string;
   is_active: boolean;
   created_at: string;
-  total_count: string;
+  total_count?: string;
+  img_url?: string | null;
+  business_name?: string;
+  business_address?: string;
+  business_rating?: string;
+  category_name?: string;
 }
 
 export interface OfferParams {

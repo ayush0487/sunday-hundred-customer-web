@@ -11,6 +11,7 @@ export const ENDPOINTS = {
 
   // Offers
   OFFERS_BY_BUSINESS: (businessId: string | number) => `/offers/business/${businessId}`,
+  OFFERS_RANDOM: "/offers/random",
 
   // Reviews
   REVIEWS: (businessId: string | number) => `/reviews/${businessId}`,

@@ -5,6 +5,9 @@ import { Categories } from "@/components/home/Categories";
 import { FeaturedBusinesses } from "@/components/home/FeaturedBusinesses";
 import { RegistrationBanner } from "@/components/home/RegistrationBanner";
 import { OffersBanner } from "@/components/home/OffersBanner";
+import { DiscoverBox } from "@/components/home/DiscoverBox";
+import { HowItWorksStrip } from "@/components/home/HowItWorksStrip";
+import { ComboDealsStrip } from "@/components/home/ComboDealsStrip";
 import { useFeaturedBusinesses } from "@/hooks/useBusiness";
 import { useCategories } from "@/hooks/useCategories";
 import { useGeolocation } from "@/hooks/useGeolocation";
@@ -91,10 +94,13 @@ export default function Homepage({ featuredData, categories }: HomeProps) {
       </Head>
       <Layout>
         <Hero />
-        <RegistrationBanner />
+        {/* <RegistrationBanner /> */}
+        <OffersBanner />
         <Categories ssrCategories={cats} />
         <FeaturedBusinesses businesses={data?.businesses ?? []} isLoading={isLoading} />
-        <OffersBanner />
+        <HowItWorksStrip />
+        <ComboDealsStrip />
+        <DiscoverBox />
       </Layout>
     </>
   );
