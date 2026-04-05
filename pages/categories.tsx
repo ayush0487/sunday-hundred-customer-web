@@ -104,13 +104,13 @@ export default function CategoryPage({ ssrBusinesses, ssrCategories }: PageProps
     page: 1,
     limit: 20,
     ...(location && { lat: location.lat, long: location.long }),
-    ...(selectedCategory && { category_id: selectedCategory.id }),
+    ...(selectedSubcategory && { sub_category_id: selectedSubcategory.id }),
     ...(activeFilter && { sort: activeFilter }),
     ...(maxDistance && { max_distance: maxDistance }),
     ...(minRating && { min_rating: minRating }),
   };
 
-  const isDefaultState = !selectedCategory && !activeFilter && !maxDistance && !minRating;
+  const isDefaultState = !selectedSubcategory && !activeFilter && !maxDistance && !minRating;
   const { data, isLoading } = useFeaturedBusinesses(
     params,
     isDefaultState ? (ssrBusinesses ?? undefined) : undefined

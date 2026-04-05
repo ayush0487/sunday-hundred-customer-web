@@ -96,6 +96,7 @@ export interface FeaturedBusinessParams {
   long?: number;
   city?: string;
   category_id?: string | number;
+  sub_category_id?: string | number;
   sort?: "top_rated" | "nearby" | "popular";
   min_rating?: number;
   max_distance?: number;
