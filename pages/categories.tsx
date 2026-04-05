@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Head from "next/head";
 import { Star, MapPin, TrendingUp, SlidersHorizontal } from "lucide-react";
 import { motion } from "framer-motion";
@@ -29,7 +29,7 @@ interface PageProps {
 export async function getServerSideProps() {
   try {
     const [bizRes, catRes] = await Promise.all([
-      serverApi.get("/business/getAllFeatureBusiness", { params: { page: 1, limit: 20 } }),
+      serverApi.get("/business/getAllFeatureBusiness", { params: { page: 1, limit: 25 } }),
       serverApi.get("/categories/"),
     ]);
 
@@ -54,6 +54,10 @@ export default function CategoryPage({ ssrBusinesses, ssrCategories }: PageProps
   const [activeFilter, setActiveFilter] = useState<FeaturedBusinessParams["sort"] | null>(null);
   const [maxDistance, setMaxDistance] = useState<number | null>(null);
   const [minRating, setMinRating] = useState<number | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [allBusinesses, setAllBusinesses] = useState<FeaturedBusinessData["businesses"]>([]);
+  const [hasMore, setHasMore] = useState(true);
+  const loadMoreRef = useRef<HTMLDivElement | null>(null);
 
   const { categories, isLoading: categoriesLoading } = useCategories(ssrCategories ?? undefined);
 
@@ -101,8 +105,8 @@ export default function CategoryPage({ ssrBusinesses, ssrCategories }: PageProps
   };
 
   const params: FeaturedBusinessParams = {
-    page: 1,
-    limit: 20,
+    page: currentPage,
+    limit: 25,
     ...(location && { lat: location.lat, long: location.long }),
     ...(selectedSubcategory && { sub_category_id: selectedSubcategory.id }),
     ...(activeFilter && { sort: activeFilter }),
@@ -111,11 +115,62 @@ export default function CategoryPage({ ssrBusinesses, ssrCategories }: PageProps
   };
 
   const isDefaultState = !selectedSubcategory && !activeFilter && !maxDistance && !minRating;
-  const { data, isLoading } = useFeaturedBusinesses(
+  const { data, isLoading, isFetching } = useFeaturedBusinesses(
     params,
-    isDefaultState ? (ssrBusinesses ?? undefined) : undefined
+    isDefaultState && currentPage === 1 ? (ssrBusinesses ?? undefined) : undefined
   );
   const businesses = data?.businesses ?? [];
+
+  useEffect(() => {
+    setCurrentPage(1);
+    setAllBusinesses([]);
+    setHasMore(true);
+  }, [selectedSubcategory?.id, activeFilter, maxDistance, minRating, location?.lat, location?.long]);
+
+  useEffect(() => {
+    if (!data) {
+      return;
+    }
+
+    if (currentPage === 1) {
+      setAllBusinesses(businesses);
+    } else {
+      setAllBusinesses((prev) => {
+        const seen = new Set(prev.map((item) => item.id));
+        const next = businesses.filter((item) => !seen.has(item.id));
+        return [...prev, ...next];
+      });
+    }
+
+    const pagination = data.pagination;
+    setHasMore(pagination.page < pagination.totalPages);
+  }, [data, businesses, currentPage]);
+
+  useEffect(() => {
+    const target = loadMoreRef.current;
+    if (!target) {
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const [entry] = entries;
+        if (!entry?.isIntersecting || isFetching || isLoading || !hasMore) {
+          return;
+        }
+
+        setCurrentPage((prev) => prev + 1);
+      },
+      {
+        root: null,
+        rootMargin: "200px",
+        threshold: 0,
+      }
+    );
+
+    observer.observe(target);
+    return () => observer.disconnect();
+  }, [hasMore, isFetching, isLoading]);
 
   const pageTitle = selectedSubcategory
     ? `${selectedSubcategory.sub_cat} Services Near You — Sunday Hundred`
@@ -175,7 +230,7 @@ export default function CategoryPage({ ssrBusinesses, ssrCategories }: PageProps
             <p className="text-gray-500">
               {selectedSubcategory
                 ? `Explore the best ${selectedSubcategory.sub_cat} providers in your area`
-                : "Select a service category to get started"}
+                : "Explore top businesses near you or pick a category"}
             </p>
           </div>
 
@@ -335,20 +390,10 @@ export default function CategoryPage({ ssrBusinesses, ssrCategories }: PageProps
             {/* Results Grid */}
             <div className="flex-1">
               <p className="text-sm text-muted-foreground mb-4">
-                {isLoading ? "Loading businesses..." : `${businesses.length} businesses found`}
+                {isLoading && currentPage === 1 ? "Loading businesses..." : `${allBusinesses.length} businesses found`}
               </p>
 
-              {!selectedCategory ? (
-                <div className="rounded-2xl bg-card border-2 border-dashed border-border p-8 text-center">
-                  <p className="text-gray-600 mb-4">Select a service category to see available businesses</p>
-                  <button
-                    onClick={() => setShowCategorySelector(true)}
-                    className="inline-flex items-center gap-2 gradient-gold text-primary-foreground font-medium px-6 py-3 rounded-lg transition hover:opacity-90"
-                  >
-                    Browse Categories
-                  </button>
-                </div>
-              ) : isLoading ? (
+              {isLoading && currentPage === 1 ? (
                 <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5">
                   {Array.from({ length: 6 }).map((_, i) => (
                     <div key={i} className="rounded-2xl bg-card shadow-card animate-pulse">
@@ -360,24 +405,42 @@ export default function CategoryPage({ ssrBusinesses, ssrCategories }: PageProps
                     </div>
                   ))}
                 </div>
-              ) : businesses.length === 0 ? (
+              ) : allBusinesses.length === 0 ? (
                 <div className="rounded-2xl bg-gray-50 border border-gray-200 p-12 text-center">
-                  <p className="text-gray-600">No businesses found for your selection</p>
-                  <p className="text-sm text-gray-500 mt-2">Try changing your filters or category</p>
+                  <p className="text-gray-600">
+                    {selectedSubcategory || activeFilter || maxDistance || minRating
+                      ? "No businesses found for your selection"
+                      : "No businesses available right now"}
+                  </p>
+                  <p className="text-sm text-gray-500 mt-2">
+                    {selectedSubcategory || activeFilter || maxDistance || minRating
+                      ? "Try changing your filters or category"
+                      : "Please try again in a bit"}
+                  </p>
                 </div>
               ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5">
-                  {businesses.map((biz, i) => (
-                    <motion.div
-                      key={biz.id}
-                      initial={{ opacity: 0, y: 15 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: i * 0.05, duration: 0.35 }}
-                    >
-                      <BusinessCard {...biz} />
-                    </motion.div>
-                  ))}
-                </div>
+                <>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5">
+                    {allBusinesses.map((biz, i) => (
+                      <motion.div
+                        key={biz.id}
+                        initial={{ opacity: 0, y: 15 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: i * 0.03, duration: 0.3 }}
+                      >
+                        <BusinessCard {...biz} />
+                      </motion.div>
+                    ))}
+                  </div>
+
+                  <div ref={loadMoreRef} className="h-12 flex items-center justify-center mt-6">
+                    {isFetching && currentPage > 1 ? (
+                      <p className="text-xs text-muted-foreground">Loading more businesses...</p>
+                    ) : !hasMore ? (
+                      <p className="text-xs text-muted-foreground">You have reached the end.</p>
+                    ) : null}
+                  </div>
+                </>
               )}
             </div>
           </div>

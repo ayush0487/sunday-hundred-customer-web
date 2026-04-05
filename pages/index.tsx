@@ -3,6 +3,7 @@ import { Layout } from "@/components/Layout";
 import { Hero } from "@/components/home/Hero";
 import { Categories } from "@/components/home/Categories";
 import { FeaturedBusinesses } from "@/components/home/FeaturedBusinesses";
+import { RegistrationBanner } from "@/components/home/RegistrationBanner";
 import { OffersBanner } from "@/components/home/OffersBanner";
 import { useFeaturedBusinesses } from "@/hooks/useBusiness";
 import { useCategories } from "@/hooks/useCategories";
@@ -90,6 +91,7 @@ export default function Homepage({ featuredData, categories }: HomeProps) {
       </Head>
       <Layout>
         <Hero />
+        <RegistrationBanner />
         <Categories ssrCategories={cats} />
         <FeaturedBusinesses businesses={data?.businesses ?? []} isLoading={isLoading} />
         <OffersBanner />

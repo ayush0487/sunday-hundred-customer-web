@@ -77,10 +77,14 @@ export interface Business {
   total_reviews: number;
   is_active: boolean;
   category_id: string;
+  sub_category_id?: string;
   lat: number;
   long: number;
   category_name: string;
+  sub_category_name?: string;
   city_name?: string;
+  city_id?: string;
+  address?: string;
   distance_km?: number;
   created_at: string;
   services?: Service[];
@@ -110,6 +114,7 @@ export interface FeaturedBusinessData {
 export interface BusinessDetailParams {
   lat?: number;
   long?: number;
+  source?: string;
 }
 
 // ── Review ──────────────────────────────────────────────

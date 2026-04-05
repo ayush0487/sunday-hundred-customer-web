@@ -1,14 +1,16 @@
 import { useState } from "react";
 import Head from "next/head";
-import { ArrowLeft, ChevronLeft, ChevronRight, Clock, MapPin, MessageCircle, Share2 } from "lucide-react";
+import { ArrowLeft, ChevronLeft, ChevronRight, Clock, MapPin, MessageCircle, Phone, Share2 } from "lucide-react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { Layout } from "@/components/Layout";
+import { BusinessCard } from "@/components/BusinessCard";
 import { OfferCard } from "@/components/OfferCard";
 import { useRouter } from "next/router";
-import { useBusinessById } from "@/hooks/useBusiness";
+import { useBusinessById, useFeaturedBusinesses } from "@/hooks/useBusiness";
 import { useOffers } from "@/hooks/useOffers";
 import { useGeolocation } from "@/hooks/useGeolocation";
+import { getAuthToken } from "@/lib/auth";
 import serverApi from "@/api/server";
 import type { GetServerSidePropsContext } from "next";
 import type { Business, OffersData } from "@/types/api.types";
@@ -21,6 +23,19 @@ const placeholderImages = [
   "https://images.unsplash.com/photo-1544161515-4ab6ce6db874?w=800&h=500&fit=crop",
 ];
 
+function normalizePhoneNumber(value?: string | null) {
+  return value ? value.replace(/\D/g, "") : "";
+}
+
+function formatPhoneNumber(value?: string | null) {
+  if (!value) {
+    return "";
+  }
+
+  const digits = normalizePhoneNumber(value);
+  return digits || value;
+}
+
 interface PageProps {
   ssrBusiness: Business | null;
   ssrOffers: OffersData | null;
@@ -31,7 +46,7 @@ export async function getServerSideProps(context: GetServerSidePropsContext) {
 
   try {
     const [bizRes, offersRes] = await Promise.all([
-      serverApi.get(`/business/getBusinessById/${id}`),
+      serverApi.get(`/business/getBusinessById/${id}`, { params: { source: "app" } }),
       serverApi.get(`/offers/business/${id}`, { params: { limit: 10, page: 1, active_only: true } }),
     ]);
 
@@ -52,18 +67,47 @@ export default function BusinessDetail({ ssrBusiness, ssrOffers }: PageProps) {
   const { id } = router.query;
   const { location } = useGeolocation();
 
-  const locationParams = location ? { lat: location.lat, long: location.long } : undefined;
-  const { data: biz, isLoading: bizLoading } = useBusinessById(id as string, locationParams, ssrBusiness ?? undefined);
+  const businessParams = {
+    source: "app",
+    ...(location ? { lat: location.lat, long: location.long } : {}),
+  };
+  const { data: biz, isLoading: bizLoading } = useBusinessById(id as string, businessParams, ssrBusiness ?? undefined);
   const { data: offersData, isLoading: offersLoading } = useOffers(id as string, { limit: 10, page: 1, active_only: true }, ssrOffers ?? undefined);
+  const { data: relatedData, isLoading: relatedLoading } = useFeaturedBusinesses(
+    biz
+      ? {
+          page: 1,
+          limit: 6,
+          ...(biz.city_id ? { city: biz.city_id } : {}),
+          ...(biz.category_id ? { category_id: biz.category_id } : {}),
+          ...(biz.sub_category_id ? { sub_category_id: biz.sub_category_id } : {}),
+        }
+      : undefined
+  );
 
   const services = biz?.services ?? [];
   const offers = offersData?.offers ?? [];
+  const relatedBusinesses = relatedData?.businesses.filter((item) => item.id !== biz?.id) ?? [];
+  const addressText = biz?.address || biz?.city_name || "";
+  const contactNumber = formatPhoneNumber(biz?.contact);
+  const whatsappNumber = normalizePhoneNumber(biz?.whatsapp_no || biz?.contact);
+  const whatsappHref = whatsappNumber ? `https://wa.me/${whatsappNumber}` : "";
+  const callHref = contactNumber ? `tel:${normalizePhoneNumber(contactNumber) || contactNumber}` : "";
+  const loginHref = `/login?returnTo=${encodeURIComponent(router.asPath)}`;
+  const relatedTitle = biz?.sub_category_name
+    ? `More ${biz.sub_category_name}`
+    : biz?.category_name
+      ? `More in ${biz.category_name}`
+      : "More businesses like this";
+  const isLoggedIn = Boolean(getAuthToken());
+
+  const requireLogin = () => {
+    void router.push(loginHref);
+  };
 
   const handleBookNow = (serviceName?: string) => {
-    const token = localStorage.getItem("token");
-    if (!token) {
-      const returnTo = router.asPath;
-      void router.push(`/login?returnTo=${encodeURIComponent(returnTo)}`);
+    if (!Boolean(getAuthToken())) {
+      requireLogin();
       return;
     }
 
@@ -79,6 +123,37 @@ export default function BusinessDetail({ ssrBusiness, ssrOffers }: PageProps) {
       );
     } else if (biz?.contact) {
       window.location.href = `tel:${biz.contact}`;
+    }
+  };
+
+  const handleShare = async () => {
+    if (!biz) {
+      return;
+    }
+
+    if (!Boolean(getAuthToken())) {
+      requireLogin();
+      return;
+    }
+
+    const shareUrl = canonicalUrl;
+    const shareText = `${biz.name}${biz.address ? ` • ${biz.address}` : ""}`;
+
+    if (typeof window !== "undefined" && navigator.share) {
+      try {
+        await navigator.share({
+          title: biz.name,
+          text: shareText,
+          url: shareUrl,
+        });
+        return;
+      } catch {
+        // Fall back to copy link below.
+      }
+    }
+
+    if (typeof window !== "undefined" && navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(shareUrl);
     }
   };
 
@@ -180,7 +255,9 @@ export default function BusinessDetail({ ssrBusiness, ssrOffers }: PageProps) {
             </Link>
           </div>
           <div className="absolute top-4 right-4 flex gap-2">
-            <button className="p-2.5 rounded-full glass"><Share2 className="h-4 w-4" /></button>
+            <button onClick={handleShare} className="p-2.5 rounded-full glass hover:bg-accent transition-colors" aria-label="Share business">
+              <Share2 className="h-4 w-4" />
+            </button>
           </div>
           <button
             onClick={() => setCurrentImage((p) => (p === 0 ? galleryImages.length - 1 : p - 1))}
@@ -224,6 +301,62 @@ export default function BusinessDetail({ ssrBusiness, ssrOffers }: PageProps) {
                 {biz.description && (
                   <p className="text-muted-foreground leading-relaxed mb-8">{biz.description}</p>
                 )}
+
+                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 mb-10">
+                  <div className="rounded-2xl border border-border bg-card p-4 shadow-card">
+                    <div className="flex items-start gap-3">
+                      <div className="p-2 rounded-xl bg-gold/10 text-gold">
+                        <MapPin className="h-4 w-4" />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-xs uppercase tracking-wide text-muted-foreground mb-1">Address</p>
+                        <p className="font-medium leading-relaxed text-card-foreground">{addressText || "Address not available"}</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <a
+                    href={callHref || undefined}
+                    onClick={isLoggedIn ? undefined : (event) => {
+                      event.preventDefault();
+                      requireLogin();
+                    }}
+                    className={`rounded-2xl border border-border bg-card p-4 shadow-card transition-colors ${callHref ? "hover:border-gold/40 hover:bg-gold/5" : "opacity-70"}`}
+                  >
+                    <div className="flex items-start gap-3">
+                      <div className="p-2 rounded-xl bg-foreground/5 text-foreground">
+                        <Phone className="h-4 w-4" />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-xs uppercase tracking-wide text-muted-foreground mb-1">Phone</p>
+                        <p className="font-medium leading-relaxed text-card-foreground">{contactNumber || "Call unavailable"}</p>
+                      </div>
+                    </div>
+                  </a>
+
+                  <a
+                    href={whatsappHref || undefined}
+                    target={whatsappHref ? "_blank" : undefined}
+                    rel={whatsappHref ? "noreferrer" : undefined}
+                    onClick={isLoggedIn ? undefined : (event) => {
+                      event.preventDefault();
+                      requireLogin();
+                    }}
+                    className={`rounded-2xl border border-border bg-card p-4 shadow-card transition-colors ${whatsappHref ? "hover:border-gold/40 hover:bg-gold/5" : "opacity-70"}`}
+                  >
+                    <div className="flex items-start gap-3">
+                      <div className="p-2 rounded-xl bg-green-500/10 text-green-600">
+                        <MessageCircle className="h-4 w-4" />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-xs uppercase tracking-wide text-muted-foreground mb-1">WhatsApp</p>
+                        <p className="font-medium leading-relaxed text-card-foreground">{formatPhoneNumber(biz.whatsapp_no || biz.contact) || "WhatsApp unavailable"}</p>
+                      </div>
+                    </div>
+                  </a>
+                </div>
+
+                {/* Keep contact info visible; primary actions stay in the sidebar to reduce CTA clutter. */}
               </motion.div>
 
               {/* Offers */}
@@ -289,13 +422,72 @@ export default function BusinessDetail({ ssrBusiness, ssrOffers }: PageProps) {
                 </div>
               )}
 
+              {(relatedLoading || relatedBusinesses.length > 0) && (
+                <div className="mb-10">
+                  <div className="flex items-end justify-between gap-4 mb-4">
+                    <div>
+                      <h2 className="font-display text-xl font-bold">{relatedTitle}</h2>
+                      <p className="text-sm text-muted-foreground">Similar businesses in the same service category.</p>
+                    </div>
+                  </div>
+                  {relatedLoading && !relatedBusinesses.length ? (
+                    <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                      {Array.from({ length: 3 }).map((_, index) => (
+                        <div key={index} className="rounded-2xl overflow-hidden bg-card shadow-card animate-pulse">
+                          <div className="aspect-[4/3] bg-secondary" />
+                          <div className="p-4 space-y-3">
+                            <div className="h-4 w-3/4 rounded bg-secondary" />
+                            <div className="h-3 w-1/2 rounded bg-secondary" />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : relatedBusinesses.length > 0 ? (
+                    <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                      {relatedBusinesses.slice(0, 6).map((business) => (
+                        <BusinessCard
+                          key={business.id}
+                          id={business.id}
+                          name={business.name}
+                          image_url={business.image_url}
+                          rating={business.rating}
+                          total_reviews={business.total_reviews}
+                          distance_km={business.distance_km}
+                          category_name={business.category_name}
+                        />
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">No similar businesses available right now.</p>
+                  )}
+                </div>
+              )}
+
               {/* Review system intentionally hidden */}
             </div>
 
             {/* Sidebar CTA (desktop) */}
             <aside className="hidden lg:block w-80 shrink-0">
-              <div className="sticky top-24 rounded-2xl bg-card shadow-elevated p-6">
+              <div className="sticky top-24 rounded-2xl bg-card shadow-elevated p-6 space-y-4">
                 <h3 className="font-display text-lg font-bold mb-2">{biz.name}</h3>
+                <div className="space-y-3 text-sm text-muted-foreground">
+                  <div className="flex items-start gap-3">
+                    <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-gold" />
+                    <p>{addressText || "Address not available"}</p>
+                  </div>
+                  {contactNumber && (
+                    <div className="flex items-start gap-3">
+                      <Phone className="mt-0.5 h-4 w-4 shrink-0 text-gold" />
+                      <p>{contactNumber}</p>
+                    </div>
+                  )}
+                  {biz.whatsapp_no && (
+                    <div className="flex items-start gap-3">
+                      <MessageCircle className="mt-0.5 h-4 w-4 shrink-0 text-green-600" />
+                      <p>{formatPhoneNumber(biz.whatsapp_no)}</p>
+                    </div>
+                  )}
+                </div>
                 {minPrice != null && (
                   <div className="mt-4 pt-4 border-t border-border">
                     <p className="text-sm text-muted-foreground mb-1">Starting from</p>
@@ -304,12 +496,12 @@ export default function BusinessDetail({ ssrBusiness, ssrOffers }: PageProps) {
                 )}
                 <button
                   onClick={() => handleBookNow()}
-                  className="w-full mt-6 py-3.5 rounded-xl gradient-gold text-primary-foreground font-bold hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
+                  className="w-full py-3.5 rounded-xl gradient-gold text-primary-foreground font-bold hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
                 >
                   <MessageCircle className="h-5 w-5" />
-                  {biz?.whatsapp_no ? "Book via WhatsApp" : "Call"}
+                  Book via WhatsApp
                 </button>
-                <p className="text-[10px] text-muted-foreground text-center mt-2">Instant confirmation on WhatsApp</p>
+                {/* <p className="text-[10px] text-muted-foreground text-center">Clicking will check login first, then open WhatsApp or call based on the profile.</p> */}
               </div>
             </aside>
           </div>
