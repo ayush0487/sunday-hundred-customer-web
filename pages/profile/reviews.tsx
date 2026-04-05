@@ -25,7 +25,7 @@ export default function MyReviewsPage() {
 
   return (
     <Layout>
-      {/* Review system intentionally hidden */}
+      <div className="hidden" aria-hidden="true" />
     </Layout>
   );
 }
