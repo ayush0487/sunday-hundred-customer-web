@@ -8,7 +8,7 @@ export function useFeaturedBusinesses(params?: FeaturedBusinessParams, initialDa
 
   const effectiveParams: FeaturedBusinessParams = {
     ...params,
-    ...(params?.city ? {} : selectedCity?.name ? { city: selectedCity.name } : {}),
+    ...(params?.city ? {} : selectedCity?.id ? { city: selectedCity.id } : {}),
   };
 
   return useQuery({
