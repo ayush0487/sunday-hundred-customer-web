@@ -260,7 +260,7 @@ export default function CategoryPage({ ssrBusinesses, ssrCategories }: PageProps
 
           <div className="flex flex-col lg:flex-row gap-8">
             {/* Sidebar Filters (desktop) */}
-            <aside className="hidden lg:block w-64 shrink-0">
+            {/* <aside className="hidden lg:block w-64 shrink-0">
               <div className="sticky top-24 rounded-2xl bg-card shadow-card p-5">
                 <div className="flex items-center gap-2 mb-4">
                   <SlidersHorizontal className="h-4 w-4 text-gold" />
@@ -332,10 +332,10 @@ export default function CategoryPage({ ssrBusinesses, ssrCategories }: PageProps
                   </div>
                 </div>
               </div>
-            </aside>
+            </aside> */}
 
             {/* Mobile Filters */}
-            <div className="lg:hidden flex gap-2 overflow-x-auto pb-2 scrollbar-none">
+            {/* <div className="lg:hidden flex gap-2 overflow-x-auto pb-2 scrollbar-none">
               {filterButtons.map((f) => (
                 <button
                   key={f.label}
@@ -385,7 +385,7 @@ export default function CategoryPage({ ssrBusinesses, ssrCategories }: PageProps
                   {r.label}
                 </button>
               ))}
-            </div>
+            </div> */}
 
             {/* Results Grid */}
             <div className="flex-1">

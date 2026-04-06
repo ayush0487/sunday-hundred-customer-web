@@ -49,11 +49,11 @@ export default function Homepage({ featuredData, categories }: HomeProps) {
   const { categories: cats } = useCategories(categories ?? undefined);
   const canonicalUrl = `${SITE_URL}/`;
   const description =
-    "Find top-rated local businesses near you on sundayhundred. Compare ratings, services, offers, and book instantly via WhatsApp.";
+    "Find top-rated local businesses near you on Sunday Hundred. Compare ratings, services, offers, and book instantly via WhatsApp.";
   const websiteJsonLd = {
     "@context": "https://schema.org",
     "@type": "WebSite",
-    name: "sundayhundred",
+    name: "Sunday Hundred",
     url: canonicalUrl,
     potentialAction: {
       "@type": "SearchAction",
@@ -64,7 +64,7 @@ export default function Homepage({ featuredData, categories }: HomeProps) {
   const organizationJsonLd = {
     "@context": "https://schema.org",
     "@type": "Organization",
-    name: "sundayhundred",
+    name: "Sunday Hundred",
     url: SITE_URL,
     logo: `${SITE_URL}/sundayhundred.jpeg`,
   };
@@ -72,20 +72,20 @@ export default function Homepage({ featuredData, categories }: HomeProps) {
   return (
     <>
       <Head>
-        <title>sundayhundred - Find Top Local Services Near You</title>
+        <title>Sunday Hundred - Find Top Local Services Near You</title>
         <meta name="description" content={description} />
         <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1" />
         <link rel="canonical" href={canonicalUrl} />
 
         <meta property="og:type" content="website" />
-        <meta property="og:title" content="sundayhundred - Find Top Local Services Near You" />
+        <meta property="og:title" content="Sunday Hundred - Find Top Local Services Near You" />
         <meta property="og:description" content={description} />
         <meta property="og:url" content={canonicalUrl} />
-        <meta property="og:site_name" content="sundayhundred" />
+        <meta property="og:site_name" content="Sunday Hundred" />
         <meta property="og:image" content={`${SITE_URL}/sundayhundred.jpeg`} />
 
         <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content="sundayhundred - Find Top Local Services Near You" />
+        <meta name="twitter:title" content="Sunday Hundred - Find Top Local Services Near You" />
         <meta name="twitter:description" content={description} />
         <meta name="twitter:image" content={`${SITE_URL}/sundayhundred.jpeg`} />
 
@@ -98,7 +98,7 @@ export default function Homepage({ featuredData, categories }: HomeProps) {
         <OffersBanner />
         <Categories ssrCategories={cats} />
         <FeaturedBusinesses businesses={data?.businesses ?? []} isLoading={isLoading} />
-        <HowItWorksStrip />
+        {/* <HowItWorksStrip /> */}
         <ComboDealsStrip />
         <DiscoverBox />
       </Layout>
