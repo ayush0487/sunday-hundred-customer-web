@@ -96,10 +96,10 @@ export default function Homepage({ featuredData, categories }: HomeProps) {
         <Hero />
         {/* <RegistrationBanner /> */}
         <OffersBanner />
+        <ComboDealsStrip />
         <Categories ssrCategories={cats} />
         <FeaturedBusinesses businesses={data?.businesses ?? []} isLoading={isLoading} />
         {/* <HowItWorksStrip /> */}
-        <ComboDealsStrip />
         <DiscoverBox />
       </Layout>
     </>

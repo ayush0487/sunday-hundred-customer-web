@@ -3,7 +3,7 @@ import Link from "next/link";
 import { Layout } from "@/components/Layout";
 import { FeaturedBusinesses } from "@/components/home/FeaturedBusinesses";
 import { OffersBanner } from "@/components/home/OffersBanner";
-import { ArrowLeft, Camera, Dumbbell, Sparkles } from "lucide-react";
+import { ArrowLeft, Sparkles } from "lucide-react";
 import serverApi from "@/api/server";
 import type { FeaturedBusinessData } from "@/types/api.types";
 
@@ -15,17 +15,19 @@ const previewDeals = [
   {
     title: "Wedding Package",
     subtitle: "Salon + Banquet",
-    icon: Sparkles,
+    image:
+      "https://assets.vogue.in/photos/69a41ddc3b691ac3ed5baaa7/master/w_1024%2Cc_limit/VKR60769.jpg",
   },
   {
     title: "Fit & Fab",
     subtitle: "Gym + Nutritionist",
-    icon: Dumbbell,
+    image: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRiMzRF7zrX2BTQ_n87lNyfBJxfOjLp1u1K4Gj_81eBxA&s=10",
   },
   {
     title: "Beauty & Photoshoot",
     subtitle: "Makeup + Photographer",
-    icon: Camera,
+    image:
+      "https://img.freepik.com/free-photo/dreamy-curly-woman-pink-suit-sitting-near-mirror_197531-16809.jpg?semt=ais_incoming&w=740&q=80",
   },
 ];
 
@@ -86,27 +88,24 @@ export default function ComboDealsPage({ featuredData }: ComboDealsPageProps) {
 
             <div className="grid gap-4 lg:grid-cols-3">
               {previewDeals.map((deal) => {
-                const Icon = deal.icon;
-
                 return (
                   <div
                     key={deal.title}
-                    className="relative overflow-hidden rounded-[1.5rem] border border-white/10 bg-white/[0.04] p-5"
+                    className="relative overflow-hidden rounded-[1.5rem] border border-white/10 bg-[#0f172a] p-5"
                   >
-                    <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(251,191,36,0.12),transparent_40%)]" />
+                    <img src={deal.image} alt={deal.title} className="absolute inset-0 h-full w-full object-cover" />
+                    <div className="absolute inset-0 bg-black/10" />
+                    <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(2,6,23,0.05)_0%,rgba(2,6,23,0.35)_78%)]" />
                     <div className="relative flex h-full flex-col justify-between gap-8">
-                      <div className="flex items-start justify-between gap-4">
-                        <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.08] text-gold shadow-inner shadow-black/20">
-                          <Icon className="h-7 w-7" />
-                        </div>
-                        <span className="rounded-full border border-white/10 bg-black/20 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-white/70">
+                      <div className="flex items-start justify-end gap-4">
+                        <span className="rounded-full border border-white/15 bg-black/35 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-white/80 backdrop-blur-sm">
                           Preview only
                         </span>
                       </div>
 
                       <div>
                         <h2 className="text-2xl font-bold leading-tight text-white">{deal.title}</h2>
-                        <p className="mt-2 text-sm text-slate-400 md:text-base">{deal.subtitle}</p>
+                        <p className="mt-2 text-sm text-slate-200/90 md:text-base">{deal.subtitle}</p>
                       </div>
 
                       <p className="text-sm font-semibold text-gold">Launching soon</p>
