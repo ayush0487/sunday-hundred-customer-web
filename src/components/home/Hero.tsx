@@ -8,7 +8,7 @@ const heroSlides = [
   {
     id: 1,
     title: "Discover The Best Local Deals In Your City",
-    subtitle: "Find salons,gym,clinics,banquates & more with exclusive offers near you",
+    subtitle: "Discover salons, gyms, clinics, banquets & more with exclusive offers near you.",
     image: "https://images.stockcake.com/public/0/9/c/09cfda9f-351f-4f89-a8c1-d65c6d54938c_large/vibrant-night-city-stockcake.jpg",
     cta: "Explore",
   },
