@@ -30,7 +30,8 @@ export function ComboDealsStrip() {
             <Sparkles className="h-3.5 w-3.5" />
             Exclusive Combo Deals
           </span>
-          <h2 className="font-display text-2xl font-bold text-white md:text-3xl">Bundle services, save more, and launch faster</h2>
+          <h2 className="font-display text-2xl font-bold text-white md:text-3xl">Exclusive Brand Collaborations</h2>
+          <p className="max-w-2xl text-sm text-slate-200/90 md:text-base">Special combo offers you won’t find elsewhere</p>
         </div>
 
         <div className="grid gap-4 lg:grid-cols-3">
@@ -39,7 +40,7 @@ export function ComboDealsStrip() {
               <Link
                 key={deal.title}
                 href="/combo-deals"
-                className="group relative overflow-hidden rounded-[1.5rem] border border-white/10 bg-[#0f172a] p-5 transition duration-300 hover:-translate-y-1 hover:border-gold/35"
+                className="group relative h-56 overflow-hidden rounded-[1.5rem] border border-white/10 bg-[#0f172a] p-5 transition duration-300 hover:-translate-y-1 hover:border-gold/35 md:h-64"
               >
                 <img
                   src={deal.image}
@@ -50,13 +51,7 @@ export function ComboDealsStrip() {
                 <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(2,6,23,0.05)_0%,rgba(2,6,23,0.35)_78%)]" />
                 <div className="absolute -right-10 -top-10 h-28 w-28 rounded-full bg-gold/10 blur-3xl" />
 
-                <div className="relative flex h-full flex-col justify-between gap-8">
-                  <div className="flex items-start justify-end gap-4">
-                    <span className="rounded-full border border-white/15 bg-black/35 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-white/80 backdrop-blur-sm">
-                      Click to open
-                    </span>
-                  </div>
-
+                <div className="relative flex h-full flex-col justify-between gap-8 pt-6 md:pt-8">
                   <div>
                     <h3 className="text-2xl font-bold leading-tight text-white">{deal.title}</h3>
                     <p className="mt-2 text-sm text-slate-200/90 md:text-base">{deal.subtitle}</p>
