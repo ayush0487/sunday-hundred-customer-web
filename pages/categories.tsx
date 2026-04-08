@@ -389,9 +389,9 @@ export default function CategoryPage({ ssrBusinesses, ssrCategories }: PageProps
 
             {/* Results Grid */}
             <div className="flex-1">
-              <p className="text-sm text-muted-foreground mb-4">
+              {/* <p className="text-sm text-muted-foreground mb-4">
                 {isLoading && currentPage === 1 ? "Loading businesses..." : `${allBusinesses.length} businesses found`}
-              </p>
+              </p> */}
 
               {isLoading && currentPage === 1 ? (
                 <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5">

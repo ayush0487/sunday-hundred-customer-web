@@ -90,7 +90,7 @@ export default function LoginPage() {
               <p className="text-sm text-muted-foreground text-center">or</p>
                 <p className="text-sm text-muted-foreground text-center">
                 Want To Register You Business?{" "}
-                <Link href="https://dashbaord.sundayhundred.com" className="text-primary hover:underline">
+                <Link href="https://dashboard.sundayhundred.com" className="text-primary hover:underline">
                   Sign up
                 </Link>
               </p>

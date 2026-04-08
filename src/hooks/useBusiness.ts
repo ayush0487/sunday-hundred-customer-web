@@ -5,6 +5,7 @@ import type { FeaturedBusinessData, FeaturedBusinessParams, Business, BusinessDe
 
 export function useFeaturedBusinesses(params?: FeaturedBusinessParams, initialData?: FeaturedBusinessData) {
   const { selectedCity, needsCitySelection } = useCity();
+  const currentPage = params?.page ?? 1;
 
   const effectiveParams: FeaturedBusinessParams = {
     ...params,
@@ -14,7 +15,8 @@ export function useFeaturedBusinesses(params?: FeaturedBusinessParams, initialDa
   return useQuery({
     queryKey: ["businesses", "featured", effectiveParams],
     queryFn: () => businessService.getFeatured(effectiveParams).then((res) => res.data.data),
-    enabled: params?.city ? true : !needsCitySelection,
+    // Keep city gating for first-page discovery, but never block explicit pagination fetches.
+    enabled: params?.city ? true : currentPage > 1 ? true : !needsCitySelection,
     initialData,
   });
 }
