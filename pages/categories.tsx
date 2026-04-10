@@ -117,7 +117,8 @@ export default function CategoryPage({ ssrBusinesses, ssrCategories }: PageProps
   const isDefaultState = !selectedSubcategory && !activeFilter && !maxDistance && !minRating;
   const { data, isLoading, isFetching } = useFeaturedBusinesses(
     params,
-    isDefaultState && currentPage === 1 ? (ssrBusinesses ?? undefined) : undefined
+    // Only use SSR data for very first load with default filters
+    isDefaultState && currentPage === 1 && !showCategorySelector ? (ssrBusinesses ?? undefined) : undefined
   );
   const businesses = data?.businesses ?? [];
 

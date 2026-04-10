@@ -17,7 +17,8 @@ export function useFeaturedBusinesses(params?: FeaturedBusinessParams, initialDa
     queryFn: () => businessService.getFeatured(effectiveParams).then((res) => res.data.data),
     // Keep city gating for first-page discovery, but never block explicit pagination fetches.
     enabled: params?.city ? true : currentPage > 1 ? true : !needsCitySelection,
-    initialData,
+    // Only use SSR initialData for page 1, page 2+ always fetch fresh
+    initialData: currentPage === 1 ? initialData : undefined,
   });
 }
 
