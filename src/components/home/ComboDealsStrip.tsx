@@ -24,10 +24,10 @@ const comboDeals = [
 export function ComboDealsStrip() {
   return (
     <section className="container pb-8">
-      <div className="rounded-[2rem] border border-white/10 bg-[#0b0f17] px-5 py-6 shadow-[0_18px_60px_rgba(0,0,0,0.35)] md:px-7 md:py-7">
+      <div className="rounded-[2rem] border border-white/10  bg-[#0b0f17] px-5 py-6 shadow-[0_18px_60px_rgba(0,0,0,0.35)] md:px-7 md:py-7">
         <div className="mb-5 flex flex-col gap-2">
-          <span className="inline-flex items-center gap-2 rounded-full border border-gold/25 bg-gold/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.22em] text-gold">
-            <Sparkles className="h-3.5 w-3.5" />
+          <span className="inline-flex items-center w-fit gap-2 rounded-full border border-gold/25 bg-gold/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.22em] text-gold">
+            {/* <Sparkles className="h-3.5 w-3.5" /> */}
             Exclusive Combo Deals
           </span>
           <h2 className="font-display text-2xl font-bold text-white md:text-3xl">Exclusive Brand Collaborations</h2>

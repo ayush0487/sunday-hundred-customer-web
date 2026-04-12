@@ -1,7 +1,6 @@
 import { useMemo, useState } from "react";
 import { MapPin } from "lucide-react";
 import { useCity } from "@/context/CityContext";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export function CitySelectionModal() {
   const {
@@ -59,18 +58,21 @@ export function CitySelectionModal() {
           </button>
         ) : (
           <>
-            <Select value={pendingCity || undefined} onValueChange={setPendingCity} disabled={loading || cities.length === 0}>
-              <SelectTrigger className="h-11 w-full">
-                <SelectValue placeholder={loading ? "Loading cities..." : "Select city"} />
-              </SelectTrigger>
-              <SelectContent>
-                {cities.map((city) => (
-                  <SelectItem key={city.id} value={city.slug}>
-                    {city.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <select
+              value={pendingCity}
+              onChange={(event) => setPendingCity(event.target.value)}
+              disabled={loading || cities.length === 0}
+              className="h-11 w-full rounded-md border border-input bg-background px-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <option value="" disabled>
+                {loading ? "Loading cities..." : "Select city"}
+              </option>
+              {cities.map((city) => (
+                <option key={city.id} value={city.slug}>
+                  {city.name}
+                </option>
+              ))}
+            </select>
 
             {showOnboardingMessage ? (
               <p className="mt-3 text-sm text-muted-foreground">

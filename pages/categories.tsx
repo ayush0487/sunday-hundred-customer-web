@@ -58,6 +58,7 @@ export default function CategoryPage({ ssrBusinesses, ssrCategories }: PageProps
   const [allBusinesses, setAllBusinesses] = useState<FeaturedBusinessData["businesses"]>([]);
   const [hasMore, setHasMore] = useState(true);
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
+  const loadMoreLockedRef = useRef(false);
 
   const { categories, isLoading: categoriesLoading } = useCategories(ssrCategories ?? undefined);
 
@@ -126,7 +127,14 @@ export default function CategoryPage({ ssrBusinesses, ssrCategories }: PageProps
     setCurrentPage(1);
     setAllBusinesses([]);
     setHasMore(true);
+    loadMoreLockedRef.current = false;
   }, [selectedSubcategory?.id, activeFilter, maxDistance, minRating, location?.lat, location?.long]);
+
+  useEffect(() => {
+    if (!isFetching) {
+      loadMoreLockedRef.current = false;
+    }
+  }, [isFetching]);
 
   useEffect(() => {
     if (!data) {
@@ -143,8 +151,21 @@ export default function CategoryPage({ ssrBusinesses, ssrCategories }: PageProps
       });
     }
 
-    const pagination = data.pagination;
-    setHasMore(pagination.page < pagination.totalPages);
+    const pagination = data.pagination as FeaturedBusinessData["pagination"] & {
+      total_pages?: number | string;
+      current_page?: number | string;
+    };
+
+    const pageNumber = Number(pagination.current_page ?? pagination.page ?? currentPage);
+    const totalPagesFromApi = Number(pagination.total_pages ?? pagination.totalPages);
+    const fallbackTotalPages = pagination.limit
+      ? Math.ceil(Number(pagination.total) / Number(pagination.limit))
+      : 1;
+    const totalPages = Number.isFinite(totalPagesFromApi) && totalPagesFromApi > 0
+      ? totalPagesFromApi
+      : fallbackTotalPages;
+
+    setHasMore(pageNumber < totalPages);
   }, [data, businesses, currentPage]);
 
   useEffect(() => {
@@ -156,10 +177,12 @@ export default function CategoryPage({ ssrBusinesses, ssrCategories }: PageProps
     const observer = new IntersectionObserver(
       (entries) => {
         const [entry] = entries;
-        if (!entry?.isIntersecting || isFetching || isLoading || !hasMore) {
+        if (!entry?.isIntersecting || isFetching || isLoading || !hasMore || loadMoreLockedRef.current) {
           return;
         }
 
+        // Prevent rapid duplicate increments while the next page request is starting.
+        loadMoreLockedRef.current = true;
         setCurrentPage((prev) => prev + 1);
       },
       {
@@ -441,6 +464,25 @@ export default function CategoryPage({ ssrBusinesses, ssrCategories }: PageProps
                       <p className="text-xs text-muted-foreground">You have reached the end.</p>
                     ) : null}
                   </div>
+
+                  {hasMore && !isFetching ? (
+                    <div className="mt-2 flex justify-center">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (loadMoreLockedRef.current) {
+                            return;
+                          }
+
+                          loadMoreLockedRef.current = true;
+                          setCurrentPage((prev) => prev + 1);
+                        }}
+                        className="px-4 py-2 rounded-lg text-sm font-medium bg-secondary text-secondary-foreground hover:opacity-90 transition-opacity"
+                      >
+                        Load more
+                      </button>
+                    </div>
+                  ) : null}
                 </>
               )}
             </div>
